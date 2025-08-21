@@ -1,14 +1,80 @@
 {
-  "name": "gantt-charttmeleon",
-  "private": true,
-  "version": "0.0.0",
-  "type": "module",
+  "name": "@bentipe/gantt-chartmeleon",
+  "version": "1.0.0",
+  "description": "A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support",
+  "author": "Bentipe",
+  "license": "MIT",
+  "keywords": [
+    "gantt",
+    "gantt-chart",
+    "project-management",
+    "timeline",
+    "scheduler",
+    "vue3",
+    "javascript",
+    "chart",
+    "visualization",
+    "gantt-chartmeleon"
+  ],
+  "homepage": "https://github.com/Bentipe/gantt-charttmeleon#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Bentipe/gantt-charttmeleon.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Bentipe/gantt-charttmeleon/issues"
+  },
+  "main": "dist/gantt-chartmeleon.umd.js",
+  "module": "dist/gantt-chartmeleon.es.js",
+  "types": "dist/index.d.ts",
+  "style": "dist/gantt-chartmeleon.css",
+  "exports": {
+    ".": {
+      "import": "./dist/gantt-chartmeleon.es.js",
+      "require": "./dist/gantt-chartmeleon.umd.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./dist/gantt-chartmeleon.css": {
+      "import": "./dist/gantt-chartmeleon.css",
+      "require": "./dist/gantt-chartmeleon.css"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "sideEffects": [
+    "*.css"
+  ],
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
+    "build": "vite build && npm run build:types",
+    "build:types": "cp src/index.d.ts dist/index.d.ts",
+    "preview": "vite preview",
+    "test": "vitest",
+    "lint": "eslint src --ext .js,.ts,.vue",
+    "format": "prettier --write \"src/**/*.{js,ts,css,json,md}\"",
+    "prepublishOnly": "npm run build"
   },
   "devDependencies": {
-    "vite": "^7.1.2"
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "eslint-plugin-vue": "^9.27.0",
+    "prettier": "^3.1.0",
+    "typescript": "^5.3.0",
+    "vite": "^7.1.3",
+    "vitest": "^3.2.4",
+    "vue": "^3.4.0"
+  },
+  "peerDependencies": {
+    "vue": "^3.0.0"
+  },
+  "peerDependenciesMeta": {
+    "vue": {
+      "optional": true
+    }
+  },
+  "engines": {
+    "node": ">=14.0.0"
   }
 }

@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gantt Chart Library Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 20px;
+        }
+
+        h1 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .controls {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .controls button {
+            margin-right: 10px;
+            padding: 8px 16px;
+            border: 1px solid #ddd;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .controls button:hover {
+            background: #f0f0f0;
+        }
+
+        .controls button.active {
+            background: #2196F3;
+            color: white;
+            border-color: #2196F3;
+        }
+
+        #gantt-container {
+            height: 600px;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .info h3 {
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .info pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+<h1>📊 Gantt Chart Library Demo</h1>
+
+<div class="controls">
+    <button class="view-btn" data-view="hour">Hours</button>
+    <button class="view-btn active" data-view="day">Days</button>
+    <button class="view-btn" data-view="week">Weeks</button>
+    <button class="view-btn" data-view="month">Months</button>
+    <button id="add-task">Add Task</button>
+    <button id="add-group">Add Group</button>
+    <button id="toggle-theme">Toggle Theme</button>
+    <button id="expand-all">Expand All</button>
+    <button id="collapse-all">Collapse All</button>
+</div>
+
+<div id="gantt-container"></div>
+
+<div class="info">
+    <h3>Last Event:</h3>
+    <pre id="event-log">Waiting for events...</pre>
+</div>
+
+<script type="module">
+    // Import the library (in production, this would be from node_modules)
+    import GanttChart from '../src/gantt-chartmeleon.js';
+
+    // Initialize Gantt Chart
+    const gantt = new GanttChart('#gantt-container', {
+        viewMode: 'day',
+        enableDragDrop: true,
+        showSidebar: true
+    });
+
+    // Sample data
+    const today = new Date();
+
+    const groups = [
+        {
+            id: 'planning',
+            name: 'Planning Phase',
+            workOrder: 'WO-2024-PLAN'
+        },
+        {
+            id: 'development',
+            name: 'Development Phase',
+            workOrder: 'WO-2024-DEV'
+        },
+        {
+            id: 'testing',
+            name: 'Testing Phase',
+            workOrder: 'WO-2024-TEST'
+        }
+    ];
+
+    const tasks = [
+        // Planning tasks
+        {
+            id: 'task-1',
+            name: 'Project Kickoff',
+            start: new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000),
+            progress: 100,
+            color: '#4CAF50',
+            group: 'planning',
+            workOrder: 'WO-001',
+            assignee: 'John Doe',
+            type: 'milestone'
+        },
+        {
+            id: 'task-2',
+            name: 'Requirements Gathering',
+            start: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000),
+            progress: 100,
+            color: '#4CAF50',
+            group: 'planning',
+            workOrder: 'WO-002',
+            assignee: 'Jane Smith'
+        },
+        {
+            id: 'task-3',
+            name: 'Technical Design',
+            start: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000),
+            progress: 100,
+            color: '#4CAF50',
+            group: 'planning',
+            workOrder: 'WO-003',
+            assignee: 'Bob Johnson',
+            dependencies: ['task-2']
+        },
+
+        // Development tasks
+        {
+            id: 'task-4',
+            name: 'Backend Development',
+            start: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
+            progress: 60,
+            color: '#2196F3',
+            group: 'development',
+            workOrder: 'WO-004',
+            assignee: 'Dev Team A',
+            dependencies: ['task-3']
+        },
+        {
+            id: 'task-5',
+            name: 'Frontend Development',
+            start: new Date(today.getTime()),
+            end: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
+            progress: 40,
+            color: '#2196F3',
+            group: 'development',
+            workOrder: 'WO-005',
+            assignee: 'Dev Team B',
+            dependencies: ['task-3']
+        },
+        {
+            id: 'task-6',
+            name: 'API Integration',
+            start: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000),
+            progress: 0,
+            color: '#FF9800',
+            group: 'development',
+            workOrder: 'WO-006',
+            assignee: 'Integration Team',
+            dependencies: ['task-4', 'task-5']
+        },
+
+        // Testing tasks
+        {
+            id: 'task-7',
+            name: 'Unit Testing',
+            start: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 9 * 24 * 60 * 60 * 1000),
+            progress: 0,
+            color: '#9C27B0',
+            group: 'testing',
+            workOrder: 'WO-007',
+            assignee: 'QA Team',
+            dependencies: ['task-4', 'task-5']
+        },
+        {
+            id: 'task-8',
+            name: 'Integration Testing',
+            start: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000),
+            progress: 0,
+            color: '#9C27B0',
+            group: 'testing',
+            workOrder: 'WO-008',
+            assignee: 'QA Team',
+            dependencies: ['task-6', 'task-7']
+        },
+        {
+            id: 'task-9',
+            name: 'UAT',
+            start: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
+            progress: 0,
+            color: '#E91E63',
+            group: 'testing',
+            workOrder: 'WO-009',
+            assignee: 'Client Team',
+            dependencies: ['task-8']
+        },
+        {
+            id: 'task-10',
+            name: 'Go Live',
+            start: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
+            progress: 0,
+            color: '#F44336',
+            type: 'milestone',
+            workOrder: 'WO-010',
+            dependencies: ['task-9']
+        }
+    ];
+
+    // Set tasks and groups
+    gantt.setTasks(tasks, groups);
+
+    // Mark today
+    gantt.markDay(today, 'today', '#FFD700');
+
+    // Mark weekend
+    const weekend = new Date(today);
+    weekend.setDate(weekend.getDate() + ((6 - weekend.getDay()) || 7));
+    gantt.markDay(weekend, 'weekend');
+
+    // Event logging
+    const logEvent = (message) => {
+        document.getElementById('event-log').textContent =
+            `[${new Date().toLocaleTimeString()}] ${message}`;
+    };
+
+    // Register event listeners
+    gantt.on('taskClick', (task) => {
+        logEvent(`Task clicked: ${task.name} (${task.workOrder})`);
+    });
+
+    gantt.on('taskDrop', (data) => {
+        logEvent(`Task moved: ${data.task.name} to ${data.start.toLocaleDateString()}`);
+    });
+
+    gantt.on('groupClick', (group) => {
+        logEvent(`Group clicked: ${group.name}`);
+    });
+
+    gantt.on('groupCollapse', (groupId) => {
+        logEvent(`Group collapsed: ${groupId}`);
+    });
+
+    gantt.on('groupExpand', (groupId) => {
+        logEvent(`Group expanded: ${groupId}`);
+    });
+
+    // Control buttons
+    document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            gantt.setViewMode(e.target.dataset.view);
+            logEvent(`View mode changed to: ${e.target.dataset.view}`);
+        });
+    });
+
+    document.getElementById('add-task').addEventListener('click', () => {
+        const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'];
+        const names = ['New Feature', 'Bug Fix', 'Documentation', 'Review'];
+        const randomGroup = groups[Math.floor(Math.random() * groups.length)];
+
+        const newTask = gantt.addTask({
+            name: names[Math.floor(Math.random() * names.length)],
+            start: new Date(today.getTime() + Math.random() * 10 * 24 * 60 * 60 * 1000),
+            end: new Date(today.getTime() + (Math.random() * 5 + 10) * 24 * 60 * 60 * 1000),
+            progress: Math.floor(Math.random() * 100),
+            color: colors[Math.floor(Math.random() * colors.length)],
+            group: randomGroup.id,
+            workOrder: `WO-${Date.now()}`,
+            assignee: 'New User'
+        });
+
+        logEvent(`Added task: ${newTask.name}`);
+    });
+
+    document.getElementById('add-group').addEventListener('click', () => {
+        const group = gantt.addGroup({
+            name: `New Phase ${Date.now().toString().slice(-4)}`,
+            workOrder: `WO-GRP-${Date.now()}`
+        });
+
+        logEvent(`Added group: ${group.name}`);
+    });
+
+    let isDark = false;
+    document.getElementById('toggle-theme').addEventListener('click', () => {
+        isDark = !isDark;
+        document.getElementById('gantt-container').classList.toggle('gantt-theme-dark', isDark);
+        logEvent(`Theme changed to: ${isDark ? 'dark' : 'light'}`);
+    });
+
+    document.getElementById('expand-all').addEventListener('click', () => {
+        gantt.expandAll();
+        logEvent('All groups expanded');
+    });
+
+    document.getElementById('collapse-all').addEventListener('click', () => {
+        gantt.collapseAll();
+        logEvent('All groups collapsed');
+    });
+
+    // Log initial load
+    logEvent('Gantt chart loaded successfully');
+</script>
+</body>
+</html>

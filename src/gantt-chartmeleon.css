@@ -1,0 +1,343 @@
+.gantt-container {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+.gantt-main {
+    display: flex;
+    position: relative;
+    height: 100%;
+}
+
+/* Sidebar Styles */
+.gantt-sidebar {
+    min-width: 200px;
+    max-width: 300px;
+    border-right: 2px solid #ddd;
+    background: #fafafa;
+    overflow-x: auto;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.gantt-sidebar-header {
+    height: 50px; /* will be overridden inline to match header rows */
+    box-sizing: border-box;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    padding: 0 15px;
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
+.gantt-sidebar-content {
+    overflow-y: auto;
+    flex: 1;
+}
+
+.gantt-row-label {
+    height: 40px; /* default; JS sets inline to match options.rowHeight */
+    box-sizing: border-box; /* keep borders/padding within fixed height */
+    border-bottom: 1px solid #e0e0e0;
+    padding: 0 10px;
+    display: flex;
+    align-items: center;
+    background: white;
+    transition: background 0.2s;
+    cursor: pointer;
+}
+
+.gantt-row-label:hover {
+    background: #f5f5f5;
+}
+
+.gantt-group-label {
+    background: #e8f4f8;
+    font-weight: 600;
+}
+
+.gantt-group-label:hover {
+    background: #d6ecf3;
+}
+
+.gantt-child-label {
+    padding-left: 35px;
+}
+
+.gantt-collapse-icon {
+    width: 20px;
+    height: 20px;
+    margin-right: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s;
+    font-size: 12px;
+}
+
+.gantt-task-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.gantt-task-name {
+    font-size: 13px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #333;
+}
+
+.gantt-task-meta {
+    font-size: 11px;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.gantt-resize-handle {
+    position: absolute;
+    right: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    cursor: ew-resize;
+    background: transparent;
+    transition: background 0.2s;
+}
+
+.gantt-resize-handle:hover {
+    background: #2196F3;
+}
+
+/* Chart Container */
+ .gantt-chart-container {
+    flex: 1;
+    overflow: auto;
+    position: relative;
+    height: 100%;
+}
+
+/* Sticky time header inside the scrollable chart container */
+.gantt-chart-header-sticky {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.gantt-wrapper {
+    position: relative;
+    min-width: 100%;
+}
+
+.gantt-svg {
+    display: block;
+    min-width: 100%;
+}
+
+/* Grid Styles */
+.gantt-grid-line {
+    stroke: #e0e0e0;
+    stroke-width: 1;
+}
+
+.gantt-weekend {
+    stroke: #ffeaa7;
+    stroke-width: 1;
+    fill: #ffeaa7;
+    opacity: 0.3;
+}
+
+.gantt-marked-day {
+    fill: #ff7675;
+    opacity: 0.2;
+}
+
+.gantt-header-text {
+    fill: #333;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.gantt-row {
+    fill: #f9f9f9;
+}
+
+.gantt-row:nth-child(even) {
+    fill: #ffffff;
+}
+
+.gantt-group-row {
+    fill: #e8f4f8;
+}
+
+/* Task Styles */
+/* Ensure group rows keep their blue background even when alternating row styling applies */
+.gantt-row.gantt-group-row {
+    fill: #e8f4f8;
+}
+
+.gantt-task {
+    cursor: move;
+    transition: opacity 0.2s;
+}
+
+.gantt-task:hover {
+    opacity: 0.8;
+}
+
+.gantt-task.gantt-dragging {
+    opacity: 0.5;
+}
+
+.gantt-task-bar {
+    transition: fill 0.2s;
+}
+
+.gantt-task-progress {
+    pointer-events: none;
+}
+
+.gantt-task-text {
+    fill: white;
+    font-size: 12px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.gantt-milestone {
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.gantt-milestone:hover {
+    opacity: 0.8;
+}
+
+/* Dependency Styles */
+.gantt-dependency {
+    stroke: #666;
+    stroke-width: 2;
+    fill: none;
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.gantt-dependencies:hover .gantt-dependency {
+    opacity: 1;
+}
+
+/* Scrollbar Styles */
+.gantt-chart-container::-webkit-scrollbar,
+.gantt-sidebar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.gantt-chart-container::-webkit-scrollbar-track,
+.gantt-sidebar::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+.gantt-chart-container::-webkit-scrollbar-thumb,
+.gantt-sidebar::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.gantt-chart-container::-webkit-scrollbar-thumb:hover,
+.gantt-sidebar::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Theme Variations */
+.gantt-container.gantt-theme-dark {
+    background: #1e1e1e;
+    color: #fff;
+}
+
+.gantt-container.gantt-theme-dark .gantt-sidebar {
+    background: #2d2d2d;
+    border-right-color: #444;
+}
+
+.gantt-container.gantt-theme-dark .gantt-sidebar-header {
+    background: #2d2d2d;
+    border-bottom-color: #444;
+    color: #fff;
+}
+
+.gantt-container.gantt-theme-dark .gantt-row-label {
+    background: #1e1e1e;
+    border-bottom-color: #444;
+}
+
+.gantt-container.gantt-theme-dark .gantt-row-label:hover {
+    background: #2d2d2d;
+}
+
+.gantt-container.gantt-theme-dark .gantt-group-label {
+    background: #2a3f5f;
+}
+
+.gantt-container.gantt-theme-dark .gantt-group-label:hover {
+    background: #3a4f6f;
+}
+
+.gantt-container.gantt-theme-dark .gantt-task-name {
+    color: #fff;
+}
+
+.gantt-container.gantt-theme-dark .gantt-task-meta {
+    color: #aaa;
+}
+
+.gantt-container.gantt-theme-dark .gantt-grid-line {
+    stroke: #444;
+}
+
+.gantt-container.gantt-theme-dark .gantt-row {
+    fill: #2d2d2d;
+}
+
+.gantt-container.gantt-theme-dark .gantt-row:nth-child(even) {
+    fill: #1e1e1e;
+}
+
+.gantt-container.gantt-theme-dark .gantt-group-row {
+    fill: #2a3f5f;
+}
+
+.gantt-container.gantt-theme-dark .gantt-header-text {
+    fill: #fff;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .gantt-sidebar {
+        min-width: 150px;
+    }
+
+    .gantt-task-name {
+        font-size: 12px;
+    }
+
+    .gantt-task-meta {
+        font-size: 10px;
+    }
+}

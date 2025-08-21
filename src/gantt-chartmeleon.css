@@ -156,6 +156,16 @@
     stroke-width: 1;
 }
 
+/* Subtle separators for larger boundaries */
+.gantt-month-separator {
+    stroke: #cfcfcf;
+    stroke-width: 1.5;
+}
+.gantt-year-separator {
+    stroke: #bdbdbd;
+    stroke-width: 2;
+}
+
 .gantt-weekend {
     stroke: #ffeaa7;
     stroke-width: 1;
@@ -309,6 +319,12 @@
 
 .gantt-container.gantt-theme-dark .gantt-grid-line {
     stroke: #444;
+}
+.gantt-container.gantt-theme-dark .gantt-month-separator {
+    stroke: #555;
+}
+.gantt-container.gantt-theme-dark .gantt-year-separator {
+    stroke: #666;
 }
 
 .gantt-container.gantt-theme-dark .gantt-row {

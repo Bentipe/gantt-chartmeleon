@@ -826,7 +826,7 @@ export class GanttChart {
 
         switch(this.viewMode) {
             case 'hour':
-                return `${date.getHours()}:00`;
+                return String(date.getHours()).padStart(2, '0');
             case 'day':
                 return `${date.getDate()}`;
             case 'week':
@@ -959,13 +959,38 @@ export class GanttChart {
                 gridGroup.appendChild(rect);
             }
 
-            // Draw column line
+            // Draw column line with subtle separation for day/month/year
             const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
             line.setAttribute('x1', x);
             line.setAttribute('y1', 0);
             line.setAttribute('x2', x);
             line.setAttribute('y2', this.visibleTasks.length * this.options.rowHeight + headerOffset);
             line.classList.add('gantt-grid-line');
+
+            // Add boundary classes by view mode
+            const d = new Date(col.date);
+            const isYearStart = d.getMonth() === 0 && d.getDate() === 1;
+            const isMonthStart = d.getDate && d.getDate() === 1;
+
+            if (this.viewMode === 'day' || this.viewMode === 'hour') {
+                // Every column is a day/hour; emphasize month/year starts
+                if (isYearStart) {
+                    line.classList.add('gantt-year-separator');
+                } else if (isMonthStart) {
+                    line.classList.add('gantt-month-separator');
+                }
+            } else if (this.viewMode === 'month') {
+                // Each column is a month; emphasize year start (January)
+                if (d.getMonth() === 0) {
+                    line.classList.add('gantt-year-separator');
+                }
+            } else if (this.viewMode === 'week') {
+                // Weeks: keep default lines; optionally emphasize year start when week starts on Jan 1
+                if (isYearStart) {
+                    line.classList.add('gantt-year-separator');
+                }
+            }
+
             gridGroup.appendChild(line);
         });
 
@@ -986,6 +1011,37 @@ export class GanttChart {
         headerBg.setAttribute('height', headerH);
         headerBg.setAttribute('fill', '#f8f9fa');
         headerGroup.appendChild(headerBg);
+
+        // Vertical separators in header for alignment with grid
+        columns.forEach((col, i) => {
+            const x = i * this.options.columnWidth;
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', x);
+            line.setAttribute('y1', 0);
+            line.setAttribute('x2', x);
+            line.setAttribute('y2', headerH);
+            line.classList.add('gantt-grid-line');
+            // Boundary emphasis same rules as grid
+            const d = new Date(col.date);
+            const isYearStart = d.getMonth() === 0 && d.getDate() === 1;
+            const isMonthStart = d.getDate && d.getDate() === 1;
+            if (this.viewMode === 'day' || this.viewMode === 'hour') {
+                if (isYearStart) {
+                    line.classList.add('gantt-year-separator');
+                } else if (isMonthStart) {
+                    line.classList.add('gantt-month-separator');
+                }
+            } else if (this.viewMode === 'month') {
+                if (d.getMonth() === 0) {
+                    line.classList.add('gantt-year-separator');
+                }
+            } else if (this.viewMode === 'week') {
+                if (isYearStart) {
+                    line.classList.add('gantt-year-separator');
+                }
+            }
+            headerGroup.appendChild(line);
+        });
 
         // Bottom row: individual column labels
         columns.forEach((col, i) => {

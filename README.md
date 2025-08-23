@@ -10,14 +10,17 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 
 - 📅 **Multiple View Modes** - Hours, Days, Weeks, and Months
 - 🎯 **Task Management** - Create, update, and delete tasks
-- 🔗 **Dependencies** - Visual task dependencies with arrows
-- 📁 **Collapsible Groups** - Organize tasks into collapsible groups
+- 🔗 **Dependencies** - Visual task dependencies with arrows + programmatic API
+- 📁 **Collapsible Groups** - Organize tasks into collapsible groups; expand/collapse all
 - 🎨 **Customizable** - Colors, sizes, and styles for every task
 - 📱 **Responsive** - Works on desktop and mobile devices
 - 🖱️ **Drag & Drop** - Intuitive task rescheduling
-- 📍 **Day Marking** - Highlight special days, holidays, or events
+- 📍 **Day Marking** - Highlight special days, holidays, or events (with events)
 - 🏷️ **Y-Axis Labels** - Display work orders, assignees, and metadata
 - 🌙 **Dark Mode** - Built-in dark theme support
+- 🌐 **Locale & Formatting** - Set locale, date and time formats
+- 🧭 **Date Range Control** - Configure min/max dates (auto-extends to fill view)
+- 🧩 **Sidebar Improvements** - Custom sidebar title + resizable sidebar
 - 💫 **Vue 3 Ready** - Easy integration with Vue 3 projects
 
 ## 📦 Installation
@@ -85,7 +88,7 @@ gantt.setTasks(tasks);
 
 <script setup>
 import { GanttChart } from '@bentipe/gantt-charttmeleon/vue';
-import '@bentipe/gantt-charttmeleon/dist/gantt-chart.css';
+import '@bentipe/gantt-charttmeleon/dist/gantt-chartmeleon.css';
 
 const tasks = ref([
   // Your tasks
@@ -120,6 +123,8 @@ const handleTaskDrop = ({ task, start, end }) => {
 ```javascript
 const options = {
   viewMode: 'day',        // 'hour' | 'day' | 'week' | 'month'
+  minDate: null,          // Optional: min bound for visible date range
+  maxDate: null,          // Optional: max bound for visible date range
   rowHeight: 40,          // Height of each row
   headerHeight: 50,       // Height of the header
   columnWidth: 30,        // Width of each column
@@ -127,6 +132,10 @@ const options = {
   enableDragDrop: true,   // Enable drag and drop
   showSidebar: true,      // Show task labels sidebar
   sidebarWidth: 200,      // Initial sidebar width
+  sidebarTitle: 'Tasks',  // Sidebar header title
+  locale: 'en-US',        // Intl locale for formatting
+  dateFormat: 'YYYY-MM-DD', // Date formatting pattern
+  timeFormat: 'HH:mm',    // Time formatting pattern
   theme: 'default'        // 'default' | 'dark'
 };
 ```
@@ -227,12 +236,37 @@ gantt.unmarkDay('2024-01-01');
 gantt.clearMarkedDays();
 ```
 
+#### Dependencies
+
+```javascript
+// Set dependencies (array of relations)
+// Example format is flexible; typically pair of task IDs or objects
+const dependencies = [
+  { from: '1', to: '2', type: 'FS' }, // Finish-to-Start
+  { from: '2', to: '3', type: 'SS' }
+];
+
+gantt.setDependencies(dependencies);
+```
+
 ### Events
 
 ```javascript
 // Task events
+gantt.on('tasksSet', ({ tasks, groups }) => {
+  console.log('Tasks set:', tasks.length, 'Groups:', groups.length);
+});
+
 gantt.on('taskClick', (task) => {
   console.log('Task clicked:', task);
+});
+
+gantt.on('taskMouseOver', ({ task, event }) => {
+  console.log('Mouse over:', task.name, event.clientX, event.clientY);
+});
+
+gantt.on('taskMouseOut', ({ task, event }) => {
+  console.log('Mouse out:', task.name);
 });
 
 gantt.on('taskDrag', ({ task, start, end }) => {
@@ -256,6 +290,14 @@ gantt.on('taskRemove', (task) => {
 });
 
 // Group events
+gantt.on('groupAdd', (group) => {
+  console.log('Group added:', group);
+});
+
+gantt.on('groupRemove', (group) => {
+  console.log('Group removed:', group);
+});
+
 gantt.on('groupClick', (group) => {
   console.log('Group clicked:', group);
 });
@@ -268,9 +310,35 @@ gantt.on('groupExpand', (groupId) => {
   console.log('Group expanded:', groupId);
 });
 
+gantt.on('expandAll', () => {
+  console.log('All groups expanded');
+});
+
+gantt.on('collapseAll', () => {
+  console.log('All groups collapsed');
+});
+
 // View events
 gantt.on('viewModeChange', (mode) => {
   console.log('View mode changed to:', mode);
+});
+
+// Day marking events
+gantt.on('dayMarked', ({ date, type, color }) => {
+  console.log('Day marked:', date, type, color);
+});
+
+gantt.on('dayUnmarked', ({ date }) => {
+  console.log('Day unmarked:', date);
+});
+
+gantt.on('markedDaysCleared', () => {
+  console.log('All marked days cleared');
+});
+
+// Dependencies
+gantt.on('dependenciesSet', (deps) => {
+  console.log('Dependencies set:', deps);
 });
 
 // Remove event listener

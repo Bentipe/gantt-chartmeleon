@@ -433,3 +433,9 @@ MIT License - see [LICENSE](LICENSE) file for details
 ## 🐛 Bug Reports
 
 Found a bug? Please [open an issue](https://github.com/Bentipe/gantt-charttmeleon/issues) with a detailed description and reproduction steps.
+
+## 🔒 Security
+
+- No passwords, API keys, or other secrets are included in this repository. 
+- Do not commit environment files or credentials. The repository .gitignore excludes common secret files (.env, .npmrc, .yarnrc.yml).
+- To report a vulnerability or accidental exposure, please follow our [Security Policy](./SECURITY.md).

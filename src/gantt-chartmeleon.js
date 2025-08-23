@@ -18,7 +18,7 @@ const DEFAULT_OPTIONS = {
     theme: 'default'
 };
 
-export class GanttChart {
+class GanttChart {
     constructor(container, options = {}) {
         if (!container) {
             throw new Error('GanttChart requires a container element');
@@ -33,7 +33,7 @@ export class GanttChart {
         }
 
         // Merge options with defaults
-        this.options = { ...DEFAULT_OPTIONS, ...options };
+        this.options = {...DEFAULT_OPTIONS, ...options};
 
         // State
         this.tasks = [];
@@ -147,7 +147,7 @@ export class GanttChart {
     setupEventListeners() {
         if (this.options.enableDragDrop) {
             this.svg.addEventListener('mousedown', this.handleMouseDown.bind(this));
-            this.svg.addEventListener('touchstart', this.handleTouchStart.bind(this), { passive: false });
+            this.svg.addEventListener('touchstart', this.handleTouchStart.bind(this), {passive: false});
 
             // Global listeners
             this._mouseMoveHandler = this.handleMouseMove.bind(this);
@@ -157,7 +157,7 @@ export class GanttChart {
 
             document.addEventListener('mousemove', this._mouseMoveHandler);
             document.addEventListener('mouseup', this._mouseUpHandler);
-            document.addEventListener('touchmove', this._touchMoveHandler, { passive: false });
+            document.addEventListener('touchmove', this._touchMoveHandler, {passive: false});
             document.addEventListener('touchend', this._touchEndHandler);
         }
 
@@ -240,7 +240,7 @@ export class GanttChart {
             this.renderSidebar();
         }
 
-        this.emit('tasksSet', { tasks: this.tasks, groups: this.groups });
+        this.emit('tasksSet', {tasks: this.tasks, groups: this.groups});
     }
 
     addTask(task) {
@@ -400,7 +400,7 @@ export class GanttChart {
             color: color || this.getMarkedDayColor(type)
         });
         this.render();
-        this.emit('dayMarked', { date: dateStr, type, color });
+        this.emit('dayMarked', {date: dateStr, type, color});
     }
 
     unmarkDay(date) {
@@ -416,7 +416,7 @@ export class GanttChart {
 
         if (removed) {
             this.render();
-            this.emit('dayUnmarked', { date: dateStr });
+            this.emit('dayUnmarked', {date: dateStr});
         }
     }
 
@@ -574,12 +574,17 @@ export class GanttChart {
     }
 
     getViewModePadding() {
-        switch(this.viewMode) {
-            case 'hour': return 1;
-            case 'day': return 7;
-            case 'week': return 14;
-            case 'month': return 30;
-            default: return 7;
+        switch (this.viewMode) {
+            case 'hour':
+                return 1;
+            case 'day':
+                return 7;
+            case 'week':
+                return 14;
+            case 'month':
+                return 30;
+            default:
+                return 7;
         }
     }
 
@@ -588,12 +593,12 @@ export class GanttChart {
 
         // Add groups and their tasks
         this.groups.forEach(group => {
-            this.visibleTasks.push({ type: 'group', data: group });
+            this.visibleTasks.push({type: 'group', data: group});
 
             if (!this.collapsedGroups.has(group.id)) {
                 const groupTasks = this.tasks.filter(t => t.group === group.id);
                 groupTasks.forEach(task => {
-                    this.visibleTasks.push({ type: 'task', data: task });
+                    this.visibleTasks.push({type: 'task', data: task});
                 });
             }
         });
@@ -601,7 +606,7 @@ export class GanttChart {
         // Add ungrouped tasks
         const ungroupedTasks = this.tasks.filter(t => !t.group);
         ungroupedTasks.forEach(task => {
-            this.visibleTasks.push({ type: 'task', data: task });
+            this.visibleTasks.push({type: 'task', data: task});
         });
     }
 
@@ -804,7 +809,7 @@ export class GanttChart {
     }
 
     incrementDate(date) {
-        switch(this.viewMode) {
+        switch (this.viewMode) {
             case 'hour':
                 date.setHours(date.getHours() + 1);
                 break;
@@ -824,7 +829,7 @@ export class GanttChart {
         const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
             'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
-        switch(this.viewMode) {
+        switch (this.viewMode) {
             case 'hour':
                 return String(date.getHours()).padStart(2, '0');
             case 'day':
@@ -864,9 +869,9 @@ export class GanttChart {
     }
 
     getParentHeaderText(date) {
-        const monthsLong = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const monthsLong = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         const monthsShort = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const weekdaysShort = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+        const weekdaysShort = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
         switch (this.viewMode) {
             case 'hour': {
                 // Show Day label for the hour columns
@@ -1066,13 +1071,13 @@ export class GanttChart {
                     currentLabel = label;
                     startIndex = i;
                 } else if (label !== currentLabel) {
-                    segments.push({ label: currentLabel, start: startIndex, end: i - 1 });
+                    segments.push({label: currentLabel, start: startIndex, end: i - 1});
                     currentLabel = label;
                     startIndex = i;
                 }
             }
             if (currentLabel !== null) {
-                segments.push({ label: currentLabel, start: startIndex, end: columns.length - 1 });
+                segments.push({label: currentLabel, start: startIndex, end: columns.length - 1});
             }
 
             segments.forEach(seg => {
@@ -1386,7 +1391,7 @@ export class GanttChart {
             const task = this.tasks.find(t => t.id === taskId);
 
             if (task) {
-                this.emit('taskMouseOver', { task, event: e });
+                this.emit('taskMouseOver', {task, event: e});
             }
         }
     }
@@ -1398,7 +1403,7 @@ export class GanttChart {
             const task = this.tasks.find(t => t.id === taskId);
 
             if (task) {
-                this.emit('taskMouseOut', { task, event: e });
+                this.emit('taskMouseOut', {task, event: e});
             }
         }
     }
@@ -1412,4 +1417,4 @@ export class GanttChart {
 export const version = '1.0.0';
 
 // Default export
-export default GanttChart;
+export { GanttChart };

@@ -4,7 +4,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch, toRefs } from 'vue';
-import GanttChart from '../gantt-chartmeleon.js';
+import {GanttChart} from '../gantt-chartmeleon.js';
 import '../gantt-chart.css';
 
 // Define props

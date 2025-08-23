@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support",
   "author": "Bentipe",
-  "license": "MIT",
+  "license": "GPL-3.0",
   "keywords": [
     "gantt",
     "gantt-chart",
@@ -46,6 +46,9 @@
   "sideEffects": [
     "*.css"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build && npm run build:types",

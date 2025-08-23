@@ -3,8 +3,7 @@
 A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Build beautiful project timelines with ease.
 
 ![npm version](https://img.shields.io/npm/v/@bentipe/gantt-charttmeleon)
-![license](https://img.shields.io/npm/l/@bentipe/gantt-charttmeleon)
-![size](https://img.shields.io/bundlephobia/minzip/@bentipe/gantt-charttmeleon)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE.md)
 
 ## ✨ Features
 

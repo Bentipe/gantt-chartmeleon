@@ -30,9 +30,9 @@
   "style": "dist/gantt-chartmeleon.css",
   "exports": {
     ".": {
+      "types": "./dist/index.d.ts",
       "import": "./dist/gantt-chartmeleon.es.js",
-      "require": "./dist/gantt-chartmeleon.umd.js",
-      "types": "./dist/index.d.ts"
+      "require": "./dist/gantt-chartmeleon.umd.js"
     },
     "./dist/gantt-chartmeleon.css": {
       "import": "./dist/gantt-chartmeleon.css",
@@ -76,5 +76,8 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "terser": "^5.43.1"
   }
 }

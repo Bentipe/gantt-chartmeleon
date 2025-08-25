@@ -4,7 +4,7 @@ Caution, made with AI.
 
 A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Build beautiful project timelines with ease.
 
-![npm version](https://img.shields.io/npm/v/@bentipe/gantt-charttmeleon)
+![npm version](https://img.shields.io/npm/v/@bentipe/gantt-chartmeleon)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](./LICENSE.md)
 
 ## ✨ Features
@@ -27,13 +27,13 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 ## 📦 Installation
 
 ```bash
-npm install @bentipe/gantt-charttmeleon
+npm install @bentipe/gantt-chartmeleon
 ```
 
 Or with yarn:
 
 ```bash
-yarn add @bentipe/gantt-charttmeleon
+yarn add @bentipe/gantt-chartmeleon
 ```
 
 ## 🚀 Quick Start
@@ -41,8 +41,8 @@ yarn add @bentipe/gantt-charttmeleon
 ### Vanilla JavaScript
 
 ```javascript
-import GanttChart from '@bentipe/gantt-charttmeleon';
-import '@bentipe/gantt-charttmeleon/dist/gantt-chartmeleon.css';
+import GanttChart from '@bentipe/gantt-chartmeleon';
+import '@bentipe/gantt-chartmeleon/dist/gantt-chartmeleon.css';
 
 // Create instance
 const gantt = new GanttChart('#gantt-container', {
@@ -88,8 +88,8 @@ gantt.setTasks(tasks);
 </template>
 
 <script setup>
-import { GanttChart } from '@bentipe/gantt-charttmeleon/vue';
-import '@bentipe/gantt-charttmeleon/dist/gantt-chartmeleon.css';
+import { GanttChart } from '@bentipe/gantt-chartmeleon/vue';
+import '@bentipe/gantt-chartmeleon/dist/gantt-chartmeleon.css';
 
 const tasks = ref([
   // Your tasks
@@ -385,7 +385,7 @@ Override CSS variables for custom theming:
 
 ```bash
 # Clone the repository
-git clone https://github.com/Bentipe/gantt-charttmeleon.git
+git clone https://github.com/Bentipe/gantt-chartmeleon.git
 
 # Install dependencies
 npm install
@@ -429,7 +429,7 @@ gantt-chart/
 
 ## 🐛 Bug Reports
 
-Found a bug? Please [open an issue](https://github.com/Bentipe/gantt-charttmeleon/issues) with a detailed description and reproduction steps.
+Found a bug? Please [open an issue](https://github.com/Bentipe/gantt-chartmeleon/issues) with a detailed description and reproduction steps.
 
 ## 🔒 Security
 

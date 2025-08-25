@@ -16,13 +16,13 @@
     "visualization",
     "gantt-chartmeleon"
   ],
-  "homepage": "https://github.com/Bentipe/gantt-charttmeleon#readme",
+  "homepage": "https://github.com/Bentipe/gantt-chartmeleon#readme",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/Bentipe/gantt-charttmeleon.git"
+    "url": "git+https://github.com/Bentipe/gantt-chartmeleon.git"
   },
   "bugs": {
-    "url": "https://github.com/Bentipe/gantt-charttmeleon/issues"
+    "url": "https://github.com/Bentipe/gantt-chartmeleon/issues"
   },
   "main": "dist/gantt-chartmeleon.umd.js",
   "module": "dist/gantt-chartmeleon.es.js",

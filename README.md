@@ -427,10 +427,6 @@ gantt-chart/
 └── package.json
 ```
 
-## 📄 License
-
-MIT License - see [LICENSE](LICENSE) file for details
-
 ## 🐛 Bug Reports
 
 Found a bug? Please [open an issue](https://github.com/Bentipe/gantt-charttmeleon/issues) with a detailed description and reproduction steps.

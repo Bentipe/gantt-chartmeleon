@@ -1,5 +1,7 @@
 # 📊 Gantt Chartmeleon Library
 
+Caution, made with AI.
+
 A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Build beautiful project timelines with ease.
 
 ![npm version](https://img.shields.io/npm/v/@bentipe/gantt-charttmeleon)

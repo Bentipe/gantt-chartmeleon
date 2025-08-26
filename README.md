@@ -28,6 +28,8 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 - 🧩 **Sidebar Improvements** - Custom sidebar title + resizable sidebar
 - 💫 **Vue 3 Ready** - Easy integration with Vue 3 projects
 
+Note: Tasks operate via a segments-only model (except milestones). Each task must have one or more segments. If you pass task-level start/end only, the library will internally convert them into a single segment and compute the task’s overall start/end from its segments.
+
 ## 📦 Installation
 
 ```bash
@@ -538,7 +540,7 @@ A live demo is included in the repo under the demo/ folder and showcases:
 - Segmented tasks: tasks with multiple independent segments (each segment has its own start/end and name)
 - Controls: Add Task, Add Group, Add Subgroup, Toggle Theme, Expand All, Collapse All, Zoom, Today
 
-Note: The Add Task button will sometimes create a segmented task with 2–8 segments to demonstrate the feature.
+Note: The Add Task button always creates a segmented task with 1–8 segments to demonstrate the segments-only model.
 
 How to run locally:
 

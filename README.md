@@ -16,6 +16,7 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 - 🎨 **Customizable** - Colors, sizes, and styles for every task
 - 📱 **Responsive** - Works on desktop and mobile devices
 - 🖱️ **Drag & Drop** - Intuitive task rescheduling
+- 🔍 **Zoom In/Out** - Programmatic zoom controls and zoomChange event
 - 📍 **Day Marking** - Highlight special days, holidays, or events (with events)
 - 🏷️ **Y-Axis Labels** - Display work orders, assignees, and metadata
 - 🌙 **Dark Mode** - Built-in dark theme support
@@ -224,6 +225,25 @@ const visible = gantt.getVisibleTasks();
 const { start, end } = gantt.getDateRange();
 ```
 
+#### Zoom
+
+```javascript
+// Get current zoom (column width in px)
+const current = gantt.getZoom();
+
+// Set absolute zoom (clamped internally)
+gantt.setZoom(40);
+
+// Relative zoom controls
+gantt.zoomIn();   // default step = 5px
+gantt.zoomOut(10); // custom step
+
+// Listen to zoom changes
+gantt.on('zoomChange', ({ columnWidth }) => {
+  console.log('Zoom changed. Column width:', columnWidth);
+});
+```
+
 #### Day Marking
 
 ```javascript
@@ -322,6 +342,10 @@ gantt.on('collapseAll', () => {
 // View events
 gantt.on('viewModeChange', (mode) => {
   console.log('View mode changed to:', mode);
+});
+
+gantt.on('zoomChange', ({ columnWidth }) => {
+  console.log('Zoom changed to column width:', columnWidth);
 });
 
 // Day marking events

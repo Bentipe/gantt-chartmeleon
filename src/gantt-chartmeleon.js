@@ -228,6 +228,35 @@ class GanttChart {
 
   // Public API Methods
 
+  // Zoom API
+  getZoom() {
+    return this.options.columnWidth;
+  }
+
+  setZoom(columnWidth) {
+    // clamp to sensible bounds
+    const min = 10;
+    const max = 120;
+    const prev = this.options.columnWidth;
+    const next = Math.max(min, Math.min(max, Math.round(columnWidth)));
+    if (next === prev) return;
+    this.options.columnWidth = next;
+    // re-render with same tasks/date range; ensure fills width if needed
+    this.render();
+    if (this.options.showSidebar) {
+      this.renderSidebar();
+    }
+    this.emit('zoomChange', { columnWidth: next });
+  }
+
+  zoomIn(step = 5) {
+    this.setZoom(this.options.columnWidth + step);
+  }
+
+  zoomOut(step = 5) {
+    this.setZoom(this.options.columnWidth - step);
+  }
+
   setTasks(tasks, groups = []) {
     this.tasks = tasks.map(task => this.normalizeTask(task));
     this.groups = groups.map(group => this.normalizeGroup(group));

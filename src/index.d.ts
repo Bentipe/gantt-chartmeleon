@@ -99,6 +99,7 @@ export interface EventMap {
 
     // View events
     viewModeChange: EventCallback<string>;
+    zoomChange: EventCallback<{ columnWidth: number }>;
 
     // Day marking events
     dayMarked: EventCallback<{ date: string; type: string; color?: string }>;
@@ -147,6 +148,12 @@ export declare class GanttChart {
     setViewMode(mode: 'hour' | 'day' | 'week' | 'month'): void;
     getVisibleTasks(): VisibleItem[];
     getDateRange(): DateRange;
+
+    // Zoom
+    getZoom(): number;
+    setZoom(columnWidth: number): void;
+    zoomIn(step?: number): void;
+    zoomOut(step?: number): void;
 
     // Day Marking
     markDay(date: Date | string, type?: string, color?: string | null): void;

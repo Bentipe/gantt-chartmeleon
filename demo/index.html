@@ -90,6 +90,8 @@
     <button id="toggle-theme">Toggle Theme</button>
     <button id="expand-all">Expand All</button>
     <button id="collapse-all">Collapse All</button>
+    <button id="zoom-in">Zoom In</button>
+    <button id="zoom-out">Zoom Out</button>
 </div>
 
 <div id="gantt-container"></div>
@@ -100,8 +102,8 @@
 </div>
 
 <script type="module">
-    // Import the library from npm CDN
-    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.2/dist/gantt-chartmeleon.es.js';
+    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@latest/dist/gantt-chartmeleon.es.js';
+    //import { GanttChart } from '../src/gantt-chartmeleon.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {
@@ -348,6 +350,16 @@
     document.getElementById('collapse-all').addEventListener('click', () => {
         gantt.collapseAll();
         logEvent('All groups collapsed');
+    });
+
+    // Zoom controls
+    document.getElementById('zoom-in').addEventListener('click', () => {
+        gantt.zoomIn();
+        logEvent(`Zoomed in (column width: ${gantt.getZoom()}px)`);
+    });
+    document.getElementById('zoom-out').addEventListener('click', () => {
+        gantt.zoomOut();
+        logEvent(`Zoomed out (column width: ${gantt.getZoom()}px)`);
     });
 
     // Log initial load

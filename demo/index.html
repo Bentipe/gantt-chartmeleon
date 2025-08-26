@@ -104,8 +104,8 @@
 </div>
 
 <script type="module">
-    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.5/dist/gantt-chartmeleon.es.js';
-    //import { GanttChart } from '../src/gantt-chartmeleon.js';
+    //import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.5/dist/gantt-chartmeleon.es.js';
+    import { GanttChart } from '../src/gantt-chartmeleon.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {
@@ -202,8 +202,27 @@
         {
             id: 'task-5',
             name: 'Frontend Development',
-            start: new Date(today.getTime()),
-            end: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
+            // Demonstrate segmented task: multiple movable segments with names
+            segments: [
+                {
+                    name: 'FE Sprint 1',
+                    start: new Date(today.getTime()),
+                    end: new Date(today.getTime() + 2 * 24 * 60 * 60 * 1000),
+                    color: '#1E88E5'
+                },
+                {
+                    name: 'FE Sprint 2',
+                    start: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
+                    end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
+                    color: '#1976D2'
+                },
+                {
+                    name: 'FE Sprint 3',
+                    start: new Date(today.getTime() + 6 * 24 * 60 * 60 * 1000),
+                    end: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
+                    color: '#1565C0'
+                }
+            ],
             progress: 40,
             color: '#2196F3',
             group: 'dev-frontend',
@@ -274,8 +293,15 @@
         }
     ];
 
-    // Set tasks and groups
-    gantt.setTasks(tasks, groups);
+    // Set tasks and groups (ensure all non-milestone tasks have segments)
+    const normalizedTasks = tasks.map(t => {
+        if (t.type === 'milestone' || (Array.isArray(t.segments) && t.segments.length > 0)) return t;
+        return {
+            ...t,
+            segments: [{ name: t.name, start: t.start, end: t.end, color: t.color }]
+        };
+    });
+    gantt.setTasks(normalizedTasks, groups);
 
     // Mark today
     gantt.markDay(today, 'today', '#FFD700');
@@ -292,12 +318,18 @@
     };
 
     // Register event listeners
-    gantt.on('taskClick', (task) => {
-        logEvent(`Task clicked: ${task.name} (${task.workOrder})`);
+    gantt.on('taskClick', (payload) => {
+        if (payload && payload.task) {
+            const segInfo = payload.segmentIndex !== null && payload.segmentIndex !== undefined ? ` [segment ${payload.segmentIndex + 1}]` : '';
+            logEvent(`Task clicked: ${payload.task.name}${segInfo}`);
+        } else if (payload) {
+            logEvent(`Task clicked: ${payload.name}`);
+        }
     });
 
     gantt.on('taskDrop', (data) => {
-        logEvent(`Task moved: ${data.task.name} to ${data.start.toLocaleDateString()}`);
+        const segInfo = data.segmentIndex !== null && data.segmentIndex !== undefined ? ` [segment ${data.segmentIndex + 1}]` : '';
+        logEvent(`Task moved${segInfo}: ${data.task.name} to ${data.start.toLocaleDateString()}`);
     });
 
     gantt.on('groupClick', (group) => {
@@ -328,18 +360,40 @@
         const allGroups = gantt.getGroups();
         const randomGroup = allGroups[Math.floor(Math.random() * allGroups.length)];
 
-        const newTask = gantt.addTask({
-            name: names[Math.floor(Math.random() * names.length)],
-            start: new Date(today.getTime() + Math.random() * 10 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + (Math.random() * 5 + 10) * 24 * 60 * 60 * 1000),
+        const baseColor = colors[Math.floor(Math.random() * colors.length)];
+        const baseName = names[Math.floor(Math.random() * names.length)];
+
+        // Always create segmented tasks (1..8 segments)
+        const segmentCount = Math.floor(Math.random() * 8) + 1; // 1..8
+        const startOffsetDays = Math.floor(Math.random() * 10); // 0..9 days from today
+        let cursor = new Date(today.getTime() + startOffsetDays * 24 * 60 * 60 * 1000);
+        const segments = [];
+        for (let i = 0; i < segmentCount; i++) {
+            const durDays = Math.floor(Math.random() * 4) + 1; // 1..4
+            const segStart = new Date(cursor);
+            const segEnd = new Date(segStart.getTime() + durDays * 24 * 60 * 60 * 1000);
+            segments.push({
+                name: `${baseName} • Segment ${i + 1}`,
+                start: segStart,
+                end: segEnd,
+                color: baseColor
+            });
+            const gapDays = Math.floor(Math.random() * 3); // 0..2 gap
+            cursor = new Date(segEnd.getTime() + gapDays * 24 * 60 * 60 * 1000);
+        }
+        const payload = {
+            name: baseName,
+            segments,
             progress: Math.floor(Math.random() * 100),
-            color: colors[Math.floor(Math.random() * colors.length)],
+            color: baseColor,
             group: randomGroup ? randomGroup.id : null,
             workOrder: `WO-${Date.now()}`,
             assignee: 'New User'
-        });
+        };
 
-        logEvent(`Added task: ${newTask.name}`);
+        const newTask = gantt.addTask(payload);
+        const segNote = Array.isArray(newTask.segments) ? ` with ${newTask.segments.length} segment(s)` : '';
+        logEvent(`Added task: ${newTask.name}${segNote}`);
     });
 
     document.getElementById('add-group').addEventListener('click', () => {

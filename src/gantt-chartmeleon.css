@@ -184,6 +184,15 @@
     font-weight: 500;
 }
 
+/* Header background via CSS class to support theming */
+.gantt-header-bg {
+    fill: #f8f9fa;
+}
+
+.gantt-container.gantt-theme-dark .gantt-header-bg {
+    fill: #2d2d2d;
+}
+
 .gantt-row {
     fill: #f9f9f9;
 }
@@ -356,4 +365,10 @@
     .gantt-task-meta {
         font-size: 10px;
     }
+}
+
+/* Dark theme fixes for timeline header */
+.gantt-container.gantt-theme-dark .gantt-chart-header-sticky {
+    background: #2d2d2d;
+    border-bottom-color: #444;
 }

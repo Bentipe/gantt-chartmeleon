@@ -66,6 +66,10 @@ class GanttChart {
     // Clear container
     this.container.innerHTML = '';
     this.container.classList.add('gantt-container');
+    // Apply theme class to container so CSS theme rules take effect
+    if (this.options.theme) {
+      this.container.classList.add(`gantt-theme-${this.options.theme}`);
+    }
 
     // Create main structure
     const mainDiv = document.createElement('div');
@@ -1043,7 +1047,8 @@ class GanttChart {
     headerBg.setAttribute('y', 0);
     headerBg.setAttribute('width', columns.length * this.options.columnWidth);
     headerBg.setAttribute('height', headerH);
-    headerBg.setAttribute('fill', '#f8f9fa');
+    // Use CSS class for theming instead of hardcoded fill
+    headerBg.classList.add('gantt-header-bg');
     headerGroup.appendChild(headerBg);
 
     // Vertical separators in header for alignment with grid

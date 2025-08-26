@@ -1,5 +1,8 @@
 <template>
-  <div ref="containerRef" class="gantt-vue-wrapper"></div>
+  <div
+    ref="containerRef"
+    class="gantt-vue-wrapper"
+  />
 </template>
 
 <script setup>

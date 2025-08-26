@@ -40,6 +40,7 @@ export interface Group {
     workOrder?: string;
     color?: string;
     metadata?: Record<string, any>;
+    parent?: string | null;
 }
 
 export interface MarkedDay {
@@ -51,6 +52,7 @@ export interface MarkedDay {
 export interface VisibleItem {
     type: 'task' | 'group';
     data: Task | Group;
+    depth?: number;
 }
 
 export interface DragEventData {

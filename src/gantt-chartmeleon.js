@@ -533,6 +533,13 @@ class GanttChart {
       }
     });
 
+    // Re-parent child groups to root
+    this.groups.forEach(g => {
+      if (g.parent === groupId) {
+        g.parent = null;
+      }
+    });
+
     this.updateVisibleTasks();
     this.render();
 
@@ -759,6 +766,7 @@ class GanttChart {
       workOrder: group.workOrder || '',
       color: group.color || '#607D8B',
       metadata: group.metadata || {},
+      parent: group.parent || null,
       ...group
     };
   }
@@ -799,22 +807,40 @@ class GanttChart {
   updateVisibleTasks() {
     this.visibleTasks = [];
 
-    // Add groups and their tasks
-    this.groups.forEach(group => {
-      this.visibleTasks.push({type: 'group', data: group});
+    // Build children map for groups (support nested groups)
+    const childrenMap = new Map();
+    // Initialize root list
+    childrenMap.set(null, []);
 
-      if (!this.collapsedGroups.has(group.id)) {
-        const groupTasks = this.tasks.filter(t => t.group === group.id);
-        groupTasks.forEach(task => {
-          this.visibleTasks.push({type: 'task', data: task});
-        });
-      }
+    this.groups.forEach(g => {
+      const parentId = g.parent || null;
+      if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
+      childrenMap.get(parentId).push(g);
     });
+
+    const addGroupAndChildren = (group, depth) => {
+      this.visibleTasks.push({ type: 'group', data: group, depth });
+      if (this.collapsedGroups.has(group.id)) return;
+
+      // First, render child groups
+      const childGroups = childrenMap.get(group.id) || [];
+      childGroups.forEach(child => addGroupAndChildren(child, depth + 1));
+
+      // Then, render tasks belonging to this group
+      const groupTasks = this.tasks.filter(t => t.group === group.id);
+      groupTasks.forEach(task => {
+        this.visibleTasks.push({ type: 'task', data: task, depth: depth + 1 });
+      });
+    };
+
+    // Render root groups and their subtrees
+    const rootGroups = childrenMap.get(null) || [];
+    rootGroups.forEach(g => addGroupAndChildren(g, 0));
 
     // Add ungrouped tasks
     const ungroupedTasks = this.tasks.filter(t => !t.group);
     ungroupedTasks.forEach(task => {
-      this.visibleTasks.push({type: 'task', data: task});
+      this.visibleTasks.push({ type: 'task', data: task, depth: 0 });
     });
   }
 
@@ -830,8 +856,12 @@ class GanttChart {
       // Ensure row height matches chart rowHeight exactly
       row.style.height = this.options.rowHeight + 'px';
 
+      const depth = item.depth || 0;
+
       if (item.type === 'group') {
         row.classList.add('gantt-group-label');
+        // Indentation for nested groups
+        row.style.paddingLeft = `${10 + depth * 20}px`;
 
         const icon = document.createElement('span');
         icon.className = 'gantt-collapse-icon';
@@ -861,6 +891,9 @@ class GanttChart {
       } else {
         if (item.data.group) {
           row.classList.add('gantt-child-label');
+          // Indentation for tasks under nested groups (align with group indentation + child offset)
+          const taskDepth = depth > 0 ? depth - 1 : 0;
+          row.style.paddingLeft = `${35 + taskDepth * 20}px`;
         }
 
         const info = document.createElement('div');

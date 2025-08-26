@@ -1,37 +1,37 @@
-name: Build and Commit
+name: Deploy Demo to GitHub Pages
 
 on:
   push:
-    branches: [master]
+    branches: [ master ]  # or master, depending on your default branch
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
-  build:
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
-
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          node-version: '22'
-          cache: 'npm'
+          path: './demo'  # Upload the demo folder
 
-      - run: npm ci
-
-      - run: npm run build
-
-      - name: Update demo files
-        run: |
-          cp dist/gantt-chartmeleon.umd.js demo/gantt-chartmeleon.js
-          cp dist/gantt-chartmeleon.css demo/gantt-chartmeleon.css
-          
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add demo/
-          
-          if ! git diff --staged --quiet; then
-            git commit -m "Update demo build [skip ci]"
-            git push
-          else
-            echo "No changes to commit"
-          fi
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

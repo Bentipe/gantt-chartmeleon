@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gantt Chart Library Demo</title>
+    <!-- Load CSS from npm CDN -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.2/dist/gantt-chartmeleon.css">
     <style>
         * {
             margin: 0;
@@ -98,8 +100,8 @@
 </div>
 
 <script type="module">
-    // Import the library (in production, this would be from node_modules)
-    import {GanttChart} from '../src/gantt-chartmeleon.js';
+    // Import the library from npm CDN
+    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.2/dist/gantt-chartmeleon.es.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {

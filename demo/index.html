@@ -487,7 +487,7 @@
     });
 
     // Stress test: generate a lot of tasks with segments and load them
-    const generateStressData = (count = 2000, minSeg = 2, maxSeg = 6) => {
+    const generateStressData = (count = 2000, minSeg = 2, maxSeg = 8) => {
         const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#E91E63', '#00BCD4'];
         const names = ['Feature', 'Fix', 'Refactor', 'Docs', 'Review', 'Spike'];
         const result = [];
@@ -527,7 +527,7 @@
     };
 
     document.getElementById('stress-test').addEventListener('click', () => {
-        const stressTasks = generateStressData(2000, 2, 6);
+        const stressTasks = generateStressData(2000, 2, 8);
         // Keep existing groups; replace current tasks with stress dataset
         gantt.setTasks(stressTasks, groups);
         logEvent(`Loaded stress dataset: ${stressTasks.length} tasks with segments`);

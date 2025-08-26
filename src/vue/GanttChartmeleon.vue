@@ -8,7 +8,7 @@
 <script setup>
 import { ref, onMounted, onUnmounted, watch, toRefs } from 'vue';
 import {GanttChart} from '../gantt-chartmeleon.js';
-import '../gantt-chart.css';
+import '../gantt-chartmeleon.css';
 
 // Define props
 const props = defineProps({
@@ -69,6 +69,10 @@ const emit = defineEmits([
   'view-mode-change',
   'zoom-change',
 
+  // Scrolling / range events
+  'range-extend',
+  'scroll-to-date',
+
   // Day marking events
   'day-marked',
   'day-unmarked',
@@ -123,6 +127,18 @@ const initGantt = () => {
   emit('ready', ganttInstance);
 };
 
+const recreateGantt = () => {
+  if (ganttInstance) {
+    try { ganttInstance.destroy(); } catch (e) { /* noop */ }
+    ganttInstance = null;
+  }
+  // Ensure container is clean
+  if (containerRef.value) {
+    containerRef.value.innerHTML = '';
+  }
+  initGantt();
+};
+
 // Setup event listeners
 const setupEventListeners = () => {
   if (!ganttInstance) return;
@@ -150,6 +166,10 @@ const setupEventListeners = () => {
   // View events
   ganttInstance.on('viewModeChange', (mode) => emit('view-mode-change', mode));
   ganttInstance.on('zoomChange', (data) => emit('zoom-change', data));
+
+  // Scrolling / range events
+  ganttInstance.on('rangeExtend', (payload) => emit('range-extend', payload));
+  ganttInstance.on('scrollToDate', (payload) => emit('scroll-to-date', payload));
 
   // Day marking events
   ganttInstance.on('dayMarked', (data) => emit('day-marked', data));
@@ -179,6 +199,11 @@ watch(dependencies, (newDeps) => {
   }
 }, { deep: true });
 
+// Recreate when options object changes
+watch(options, () => {
+  recreateGantt();
+}, { deep: true });
+
 watch(viewMode, (newMode) => {
   if (ganttInstance) {
     ganttInstance.setViewMode(newMode);
@@ -194,13 +219,9 @@ watch(markedDays, (newMarkedDays) => {
   }
 }, { deep: true });
 
-watch(theme, (newTheme) => {
-  if (containerRef.value) {
-    // Remove old theme class
-    containerRef.value.classList.remove('gantt-theme-default', 'gantt-theme-dark');
-    // Add new theme class
-    containerRef.value.classList.add(`gantt-theme-${newTheme}`);
-  }
+watch(theme, () => {
+  // Recreate gantt to apply theme option cleanly
+  recreateGantt();
 });
 
 // Lifecycle hooks
@@ -257,7 +278,11 @@ defineExpose({
   getZoom: () => ganttInstance?.getZoom(),
   setZoom: (cw) => ganttInstance?.setZoom(cw),
   zoomIn: (step) => ganttInstance?.zoomIn(step),
-  zoomOut: (step) => ganttInstance?.zoomOut(step)
+  zoomOut: (step) => ganttInstance?.zoomOut(step),
+
+  // Scrolling helpers
+  scrollToDate: (date, opts) => ganttInstance?.scrollToDate(date, opts),
+  scrollToToday: (opts) => ganttInstance?.scrollToToday(opts)
 });
 </script>
 

@@ -99,9 +99,15 @@
     <button id="zoom-in">Zoom In</button>
     <button id="zoom-out">Zoom Out</button>
     <button id="today">Today</button>
+    <button id="stress-test">Stress Test (2000 tasks)</button>
 </div>
 
 <div id="gantt-container"></div>
+
+<div class="info">
+    <h3>Counters:</h3>
+    <div id="counters">Tasks: 0 | Segments: 0</div>
+</div>
 
 <div class="info">
     <h3>Last Event:</h3>
@@ -325,6 +331,18 @@
             `[${new Date().toLocaleTimeString()}] ${message}`;
     };
 
+    // Helper: counters
+    const updateCounters = () => {
+        const all = gantt.getTasks();
+        const totalTasks = all.length;
+        const totalSegments = all.reduce((sum, t) => sum + (Array.isArray(t.segments) ? t.segments.length : 0), 0);
+        const el = document.getElementById('counters');
+        if (el) el.textContent = `Tasks: ${totalTasks} | Segments: ${totalSegments}`;
+    };
+
+    // Update counters after initial load
+    updateCounters();
+
     // Register event listeners
     gantt.on('taskClick', (payload) => {
         if (payload && payload.task) {
@@ -339,6 +357,12 @@
         const segInfo = data.segmentIndex !== null && data.segmentIndex !== undefined ? ` [segment ${data.segmentIndex + 1}]` : '';
         logEvent(`Task moved${segInfo}: ${data.task.name} to ${data.start.toLocaleDateString()}`);
     });
+
+    // Keep counters in sync with task changes
+    gantt.on('tasksSet', () => updateCounters());
+    gantt.on('taskAdd', () => updateCounters());
+    gantt.on('taskRemove', () => updateCounters());
+    gantt.on('taskUpdate', () => updateCounters());
 
     gantt.on('groupClick', (group) => {
         logEvent(`Group clicked: ${group.name}`);
@@ -402,6 +426,7 @@
         const newTask = gantt.addTask(payload);
         const segNote = Array.isArray(newTask.segments) ? ` with ${newTask.segments.length} segment(s)` : '';
         logEvent(`Added task: ${newTask.name}${segNote}`);
+        updateCounters();
     });
 
     document.getElementById('add-group').addEventListener('click', () => {
@@ -459,6 +484,54 @@
     document.getElementById('today').addEventListener('click', () => {
         gantt.scrollToToday({ align: 'center', behavior: 'smooth' });
         logEvent('Scrolled to today');
+    });
+
+    // Stress test: generate a lot of tasks with segments and load them
+    const generateStressData = (count = 2000, minSeg = 2, maxSeg = 8) => {
+        const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0', '#E91E63', '#00BCD4'];
+        const names = ['Feature', 'Fix', 'Refactor', 'Docs', 'Review', 'Spike'];
+        const result = [];
+        const groupIds = (groups || []).map(g => g.id);
+        for (let i = 0; i < count; i++) {
+            const baseColor = colors[i % colors.length];
+            const baseName = `${names[i % names.length]} ${i + 1}`;
+            const segCount = Math.floor(Math.random() * (maxSeg - minSeg + 1)) + minSeg;
+            // Spread tasks across ~90 days around today
+            const startOffset = (Math.random() * 60) - 30; // -30..+30 days
+            let cursor = new Date(today.getTime() + Math.floor(startOffset) * 24 * 60 * 60 * 1000);
+            const segments = [];
+            for (let s = 0; s < segCount; s++) {
+                const durDays = Math.floor(Math.random() * 5) + 1; // 1..5 days
+                const segStart = new Date(cursor);
+                const segEnd = new Date(segStart.getTime() + durDays * 24 * 60 * 60 * 1000);
+                segments.push({
+                    name: `${baseName} • S${s + 1}`,
+                    start: segStart,
+                    end: segEnd,
+                    color: baseColor
+                });
+                const gapDays = Math.floor(Math.random() * 3); // 0..2 gap
+                cursor = new Date(segEnd.getTime() + gapDays * 24 * 60 * 60 * 1000);
+            }
+            result.push({
+                name: baseName,
+                segments,
+                progress: Math.floor(Math.random() * 100),
+                color: baseColor,
+                group: groupIds.length ? groupIds[i % groupIds.length] : null,
+                workOrder: `WO-STRESS-${i.toString().padStart(4, '0')}`,
+                assignee: `User ${i % 50}`
+            });
+        }
+        return result;
+    };
+
+    document.getElementById('stress-test').addEventListener('click', () => {
+        const stressTasks = generateStressData(2000, 2, 8);
+        // Keep existing groups; replace current tasks with stress dataset
+        gantt.setTasks(stressTasks, groups);
+        logEvent(`Loaded stress dataset: ${stressTasks.length} tasks with segments`);
+        updateCounters();
     });
 
     // Log initial load

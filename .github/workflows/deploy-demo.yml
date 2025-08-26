@@ -1,23 +1,12 @@
-name: Build Library
+name: Build and Deploy
 
 on:
   push:
     branches: [master]
-  pull_request:
-    branches: [master]
-
-# Add these permissions!
-permissions:
-  contents: read
-  pages: write
-  id-token: write
 
 jobs:
-  build:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
 
     steps:
       - uses: actions/checkout@v4
@@ -28,20 +17,8 @@ jobs:
           node-version: '22'
           cache: 'npm'
 
-      - name: Cache node modules
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Install dependencies with retry
-        run: |
-          npm config set fetch-retries 5
-          npm config set fetch-retry-mintimeout 20000
-          npm config set fetch-retry-maxtimeout 120000
-          npm ci --prefer-offline --no-audit
+      - name: Install dependencies
+        run: npm ci --prefer-offline --no-audit
 
       - name: Build with Vite
         run: npm run build
@@ -51,15 +28,8 @@ jobs:
           cp dist/gantt-chartmeleon.umd.js demo/gantt-chartmeleon.js
           cp dist/gantt-chartmeleon.css demo/gantt-chartmeleon.css
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v4
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: './demo'
-
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/master'
-        id: deployment
-        uses: actions/deploy-pages@v4
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./demo

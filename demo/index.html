@@ -105,6 +105,11 @@
 <div id="gantt-container"></div>
 
 <div class="info">
+    <h3>Counters:</h3>
+    <div id="counters">Tasks: 0 | Segments: 0</div>
+</div>
+
+<div class="info">
     <h3>Last Event:</h3>
     <pre id="event-log">Waiting for events...</pre>
 </div>
@@ -326,6 +331,18 @@
             `[${new Date().toLocaleTimeString()}] ${message}`;
     };
 
+    // Helper: counters
+    const updateCounters = () => {
+        const all = gantt.getTasks();
+        const totalTasks = all.length;
+        const totalSegments = all.reduce((sum, t) => sum + (Array.isArray(t.segments) ? t.segments.length : 0), 0);
+        const el = document.getElementById('counters');
+        if (el) el.textContent = `Tasks: ${totalTasks} | Segments: ${totalSegments}`;
+    };
+
+    // Update counters after initial load
+    updateCounters();
+
     // Register event listeners
     gantt.on('taskClick', (payload) => {
         if (payload && payload.task) {
@@ -340,6 +357,12 @@
         const segInfo = data.segmentIndex !== null && data.segmentIndex !== undefined ? ` [segment ${data.segmentIndex + 1}]` : '';
         logEvent(`Task moved${segInfo}: ${data.task.name} to ${data.start.toLocaleDateString()}`);
     });
+
+    // Keep counters in sync with task changes
+    gantt.on('tasksSet', () => updateCounters());
+    gantt.on('taskAdd', () => updateCounters());
+    gantt.on('taskRemove', () => updateCounters());
+    gantt.on('taskUpdate', () => updateCounters());
 
     gantt.on('groupClick', (group) => {
         logEvent(`Group clicked: ${group.name}`);
@@ -403,6 +426,7 @@
         const newTask = gantt.addTask(payload);
         const segNote = Array.isArray(newTask.segments) ? ` with ${newTask.segments.length} segment(s)` : '';
         logEvent(`Added task: ${newTask.name}${segNote}`);
+        updateCounters();
     });
 
     document.getElementById('add-group').addEventListener('click', () => {
@@ -503,10 +527,11 @@
     };
 
     document.getElementById('stress-test').addEventListener('click', () => {
-        const stressTasks = generateStressData(1000, 2, 6);
+        const stressTasks = generateStressData(2000, 2, 6);
         // Keep existing groups; replace current tasks with stress dataset
         gantt.setTasks(stressTasks, groups);
         logEvent(`Loaded stress dataset: ${stressTasks.length} tasks with segments`);
+        updateCounters();
     });
 
     // Log initial load

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gantt Chart Library Demo</title>
     <!-- Load CSS from npm CDN -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.4/dist/gantt-chartmeleon.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.5/dist/gantt-chartmeleon.css">
     <style>
         * {
             margin: 0;
@@ -87,7 +87,6 @@
     <button class="view-btn" data-view="month">Months</button>
     <button id="add-task">Add Task</button>
     <button id="add-group">Add Group</button>
-    <button id="add-subgroup">Add Subgroup</button>
     <button id="toggle-theme">Toggle Theme</button>
     <button id="expand-all">Expand All</button>
     <button id="collapse-all">Collapse All</button>
@@ -104,8 +103,8 @@
 </div>
 
 <script type="module">
-    //import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.4/dist/gantt-chartmeleon.es.js';
-    import { GanttChart } from '../src/gantt-chartmeleon.js';
+    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.0.5/dist/gantt-chartmeleon.es.js';
+    //import { GanttChart } from '../src/gantt-chartmeleon.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {
@@ -127,19 +126,6 @@
             id: 'development',
             name: 'Development Phase',
             workOrder: 'WO-2024-DEV'
-        },
-        // Nested groups under Development
-        {
-            id: 'dev-backend',
-            name: 'Backend Team',
-            workOrder: 'WO-2024-DEV-BE',
-            parent: 'development'
-        },
-        {
-            id: 'dev-frontend',
-            name: 'Frontend Team',
-            workOrder: 'WO-2024-DEV-FE',
-            parent: 'development'
         },
         {
             id: 'testing',
@@ -194,7 +180,7 @@
             end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
             progress: 60,
             color: '#2196F3',
-            group: 'dev-backend',
+            group: 'development',
             workOrder: 'WO-004',
             assignee: 'Dev Team A',
             dependencies: ['task-3']
@@ -206,7 +192,7 @@
             end: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000),
             progress: 40,
             color: '#2196F3',
-            group: 'dev-frontend',
+            group: 'development',
             workOrder: 'WO-005',
             assignee: 'Dev Team B',
             dependencies: ['task-3']
@@ -325,8 +311,7 @@
     document.getElementById('add-task').addEventListener('click', () => {
         const colors = ['#4CAF50', '#2196F3', '#FF9800', '#9C27B0'];
         const names = ['New Feature', 'Bug Fix', 'Documentation', 'Review'];
-        const allGroups = gantt.getGroups();
-        const randomGroup = allGroups[Math.floor(Math.random() * allGroups.length)];
+        const randomGroup = groups[Math.floor(Math.random() * groups.length)];
 
         const newTask = gantt.addTask({
             name: names[Math.floor(Math.random() * names.length)],
@@ -334,7 +319,7 @@
             end: new Date(today.getTime() + (Math.random() * 5 + 10) * 24 * 60 * 60 * 1000),
             progress: Math.floor(Math.random() * 100),
             color: colors[Math.floor(Math.random() * colors.length)],
-            group: randomGroup ? randomGroup.id : null,
+            group: randomGroup.id,
             workOrder: `WO-${Date.now()}`,
             assignee: 'New User'
         });
@@ -349,21 +334,6 @@
         });
 
         logEvent(`Added group: ${group.name}`);
-    });
-
-    document.getElementById('add-subgroup').addEventListener('click', () => {
-        const parents = gantt.getGroups();
-        if (!parents || parents.length === 0) {
-            logEvent('No groups available to add a subgroup.');
-            return;
-        }
-        const parent = parents[Math.floor(Math.random() * parents.length)];
-        const subgroup = gantt.addGroup({
-            name: `Child of ${parent.name}`,
-            workOrder: `WO-SUBGRP-${Date.now()}`,
-            parent: parent.id
-        });
-        logEvent(`Added subgroup: ${subgroup.name} (parent: ${parent.name})`);
     });
 
     let isDark = false;

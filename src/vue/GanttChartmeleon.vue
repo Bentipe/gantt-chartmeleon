@@ -43,7 +43,7 @@ const props = defineProps({
   }
 });
 
-// Define emits
+  // Define emits
 const emit = defineEmits([
   // Task events
   'tasks-set',
@@ -67,6 +67,7 @@ const emit = defineEmits([
 
   // View events
   'view-mode-change',
+  'zoom-change',
 
   // Day marking events
   'day-marked',
@@ -148,6 +149,7 @@ const setupEventListeners = () => {
 
   // View events
   ganttInstance.on('viewModeChange', (mode) => emit('view-mode-change', mode));
+  ganttInstance.on('zoomChange', (data) => emit('zoom-change', data));
 
   // Day marking events
   ganttInstance.on('dayMarked', (data) => emit('day-marked', data));
@@ -249,7 +251,13 @@ defineExpose({
   setDependencies: (deps) => ganttInstance?.setDependencies(deps),
 
   // Rendering
-  render: () => ganttInstance?.render()
+  render: () => ganttInstance?.render(),
+
+  // Zoom
+  getZoom: () => ganttInstance?.getZoom(),
+  setZoom: (cw) => ganttInstance?.setZoom(cw),
+  zoomIn: (step) => ganttInstance?.zoomIn(step),
+  zoomOut: (step) => ganttInstance?.zoomOut(step)
 });
 </script>
 

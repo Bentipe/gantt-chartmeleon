@@ -13,6 +13,7 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 - 🎯 **Task Management** - Create, update, and delete tasks
 - 🔗 **Dependencies** - Visual task dependencies with arrows + programmatic API
 - 📁 **Collapsible Groups** - Organize tasks into collapsible groups; expand/collapse all
+- 🗂️ **Nested Groups** - Groups inside groups with hierarchical sidebar indentation
 - 🎨 **Customizable** - Colors, sizes, and styles for every task
 - 📱 **Responsive** - Works on desktop and mobile devices
 - 🖱️ **Drag & Drop** - Intuitive task rescheduling
@@ -73,7 +74,16 @@ const tasks = [
     }
 ];
 
-gantt.setTasks(tasks);
+// Optional: define groups (supports nested groups via parent)
+const groups = [
+  { id: 'planning', name: 'Planning' },
+  { id: 'development', name: 'Development' },
+  { id: 'dev-backend', name: 'Backend', parent: 'development' },
+  { id: 'dev-frontend', name: 'Frontend', parent: 'development' }
+];
+
+// Pass groups as second argument
+gantt.setTasks(tasks, groups);
 ```
 
 ### Vue 3 Component
@@ -162,6 +172,19 @@ const task = {
 };
 ```
 
+### Group Properties
+
+```javascript
+const group = {
+  id: 'group-1',            // Required: Unique identifier
+  name: 'Group Name',       // Required: Display name
+  workOrder: 'WO-2024-100', // Optional: Work order number
+  color: '#607D8B',         // Optional: Group color
+  metadata: {},             // Optional: Custom data
+  parent: null              // Optional: Parent group ID (supports nested groups)
+};
+```
+
 ### Methods
 
 #### Task Management
@@ -225,6 +248,8 @@ const visible = gantt.getVisibleTasks();
 // Get date range
 const { start, end } = gantt.getDateRange();
 ```
+
+Note: getVisibleTasks returns an array of visible items in order. For grouped views, each item has `type: 'task' | 'group'`, `data`, and may include a `depth` number indicating indentation for nested groups.
 
 #### Zoom
 
@@ -433,6 +458,23 @@ Override CSS variables for custom theming:
   --gantt-font-family: 'Inter', sans-serif;
 }
 ```
+
+## 🧪 Demo
+
+A live demo is included in the repo under the demo/ folder and showcases:
+- Nested groups (groups inside groups) with hierarchical indentation
+- Collapsing/expanding groups, including ancestors hiding all descendants
+- Controls: Add Task, Add Group, Add Subgroup, Toggle Theme, Expand All, Collapse All, Zoom, Today
+
+How to run locally:
+
+```bash
+npm install
+npm run dev
+# then open the demo at /demo/index.html via the dev server
+```
+
+Tip: You can also open demo/index.html directly in a modern browser for a quick preview.
 
 ## 🔧 Development
 

@@ -92,6 +92,7 @@
     <button id="collapse-all">Collapse All</button>
     <button id="zoom-in">Zoom In</button>
     <button id="zoom-out">Zoom Out</button>
+    <button id="today">Today</button>
 </div>
 
 <div id="gantt-container"></div>
@@ -360,6 +361,12 @@
     document.getElementById('zoom-out').addEventListener('click', () => {
         gantt.zoomOut();
         logEvent(`Zoomed out (column width: ${gantt.getZoom()}px)`);
+    });
+
+    // Today control
+    document.getElementById('today').addEventListener('click', () => {
+        gantt.scrollToToday({ align: 'center', behavior: 'smooth' });
+        logEvent('Scrolled to today');
     });
 
     // Log initial load

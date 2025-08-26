@@ -58,6 +58,7 @@ class GanttChart {
     this.setupEventListeners();
     this.setupSidebarResize();
     this.setupScrollSync();
+    this.setupInfiniteHorizontalScroll();
     this.render();
     this._initialized = true;
   }
@@ -229,7 +230,100 @@ class GanttChart {
       }
     });
   }
+  
+  setupInfiniteHorizontalScroll() {
+    // Initialize once
+    if (this._infiniteHScrollInitialized) return;
+    this._infiniteHScrollInitialized = true;
 
+    if (!this.chartContainer) return;
+
+    const thresholdPx = 200; // distance from edges to trigger extension
+    let ticking = false;
+
+    const getChunkSize = () => {
+      switch (this.viewMode) {
+        case 'hour':
+          return 48; // 2 days of hours
+        case 'day':
+          return 30; // ~1 month of days
+        case 'week':
+          return 26; // ~half a year of weeks
+        case 'month':
+          return 12; // 1 year of months
+        default:
+          return 30;
+      }
+    };
+
+    const extendRight = (cols) => {
+      const oldMax = new Date(this.maxDate);
+      const newMax = new Date(this.maxDate);
+      switch (this.viewMode) {
+        case 'hour': newMax.setHours(newMax.getHours() + cols); break;
+        case 'day': newMax.setDate(newMax.getDate() + cols); break;
+        case 'week': newMax.setDate(newMax.getDate() + 7 * cols); break;
+        case 'month': newMax.setMonth(newMax.getMonth() + cols); break;
+        default: newMax.setDate(newMax.getDate() + cols);
+      }
+      this.maxDate = newMax;
+      // Re-render after extending right; viewport can remain as-is
+      const prevScrollLeft = this.chartContainer.scrollLeft;
+      this.render();
+      if (this.options.showSidebar) this.renderSidebar();
+      // preserve scroll position
+      this.chartContainer.scrollLeft = prevScrollLeft;
+      this.emit('rangeExtend', { direction: 'right', from: oldMax, to: newMax });
+    };
+
+    const extendLeft = (cols) => {
+      const oldMin = new Date(this.minDate);
+      const newMin = new Date(this.minDate);
+      switch (this.viewMode) {
+        case 'hour': newMin.setHours(newMin.getHours() - cols); break;
+        case 'day': newMin.setDate(newMin.getDate() - cols); break;
+        case 'week': newMin.setDate(newMin.getDate() - 7 * cols); break;
+        case 'month': newMin.setMonth(newMin.getMonth() - cols); break;
+        default: newMin.setDate(newMin.getDate() - cols);
+      }
+      // Compute how many visual columns were added for scroll compensation
+      const addedColumns = cols; // for all modes we add exactly 'cols' columns (week adds 1 col per week)
+      const deltaPx = addedColumns * this.options.columnWidth;
+
+      this.minDate = newMin;
+      const prevScrollLeft = this.chartContainer.scrollLeft;
+      this.render();
+      if (this.options.showSidebar) this.renderSidebar();
+      // Keep viewport anchored by shifting scrollLeft right by the new columns width
+      this.chartContainer.scrollLeft = prevScrollLeft + deltaPx;
+      this.emit('rangeExtend', { direction: 'left', from: oldMin, to: newMin });
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        try {
+          const el = this.chartContainer;
+          const { scrollLeft, scrollWidth, clientWidth } = el;
+          const atRight = scrollLeft + clientWidth >= scrollWidth - thresholdPx;
+          const atLeft = scrollLeft <= thresholdPx;
+
+          // Guard against recursive handling while we are programmatically updating scroll
+          if (atRight) {
+            extendRight(getChunkSize());
+          } else if (atLeft) {
+            extendLeft(getChunkSize());
+          }
+        } finally {
+          ticking = false;
+        }
+      });
+    };
+
+    this.chartContainer.addEventListener('scroll', onScroll);
+  }
+  
   // Public API Methods
 
   // Zoom API
@@ -259,6 +353,87 @@ class GanttChart {
 
   zoomOut(step = 5) {
     this.setZoom(this.options.columnWidth - step);
+  }
+
+  // Scroll API
+  scrollToDate(date, { align = 'center', behavior = 'auto', paddingColumns = 2 } = {}) {
+    if (!this.chartContainer) return;
+    if (!date) return;
+    const target = new Date(date);
+    if (isNaN(target.getTime())) return;
+
+    // Ensure the target date is within current range; extend if necessary
+    let needsRender = false;
+    const oldMin = this.minDate ? new Date(this.minDate) : null;
+    const oldMax = this.maxDate ? new Date(this.maxDate) : null;
+
+    if (!this.minDate || target < this.minDate) {
+      // extend min left by paddingColumns as well
+      const newMin = new Date(target);
+      switch (this.viewMode) {
+        case 'hour': newMin.setHours(newMin.getHours() - paddingColumns); break;
+        case 'day': newMin.setDate(newMin.getDate() - paddingColumns); break;
+        case 'week': newMin.setDate(newMin.getDate() - 7 * paddingColumns); break;
+        case 'month': newMin.setMonth(newMin.getMonth() - paddingColumns); break;
+        default: newMin.setDate(newMin.getDate() - paddingColumns);
+      }
+      this.minDate = newMin;
+      needsRender = true;
+    }
+    if (!this.maxDate || target > this.maxDate) {
+      const newMax = new Date(target);
+      switch (this.viewMode) {
+        case 'hour': newMax.setHours(newMax.getHours() + paddingColumns); break;
+        case 'day': newMax.setDate(newMax.getDate() + paddingColumns); break;
+        case 'week': newMax.setDate(newMax.getDate() + 7 * paddingColumns); break;
+        case 'month': newMax.setMonth(newMax.getMonth() + paddingColumns); break;
+        default: newMax.setDate(newMax.getDate() + paddingColumns);
+      }
+      this.maxDate = newMax;
+      needsRender = true;
+    }
+
+    if (needsRender) {
+      const prevTop = this.chartContainer.scrollTop;
+      this.render();
+      if (this.options.showSidebar) this.renderSidebar();
+      // preserve vertical scroll
+      this.chartContainer.scrollTop = prevTop;
+      this.emit('rangeExtend', { direction: 'both', from: oldMin, to: oldMax });
+    }
+
+    // Compute x position and desired scrollLeft
+    const columns = this.getColumns();
+    const x = this.dateToX(target, columns);
+    const el = this.chartContainer;
+    const viewW = el.clientWidth || 0;
+
+    let left = x;
+    if (align === 'center') {
+      left = x - viewW / 2;
+    } else if (align === 'end') {
+      left = x - viewW;
+    }
+
+    // Clamp scroll bounds
+    const maxLeft = Math.max(0, el.scrollWidth - viewW);
+    left = Math.max(0, Math.min(maxLeft, left));
+
+    try {
+      if (el.scrollTo) {
+        el.scrollTo({ left, top: el.scrollTop, behavior });
+      } else {
+        el.scrollLeft = left;
+      }
+    } catch (e) {
+      el.scrollLeft = left;
+    }
+
+    this.emit('scrollToDate', { date: target, align });
+  }
+
+  scrollToToday(options = {}) {
+    this.scrollToDate(new Date(), options);
   }
 
   setTasks(tasks, groups = []) {

@@ -22,6 +22,7 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 - 🌙 **Dark Mode** - Built-in dark theme support
 - 🌐 **Locale & Formatting** - Set locale, date and time formats
 - 🧭 **Date Range Control** - Configure min/max dates (auto-extends to fill view)
+- 🔁 **Infinite Horizontal Scroll** - Seamlessly extends time range as you scroll left/right
 - 🧩 **Sidebar Improvements** - Custom sidebar title + resizable sidebar
 - 💫 **Vue 3 Ready** - Easy integration with Vue 3 projects
 
@@ -244,6 +245,27 @@ gantt.on('zoomChange', ({ columnWidth }) => {
 });
 ```
 
+#### Scrolling
+
+```javascript
+// Scroll horizontally so that a given date is visible
+// Options:
+// - align: 'start' | 'center' | 'end' (default: 'center')
+// - behavior: 'auto' | 'smooth' (default: 'auto')
+// - paddingColumns: number of extra columns to extend when the target date is out of range (default: 2)
+gantt.scrollToDate(new Date('2025-08-26'), { align: 'center', behavior: 'smooth', paddingColumns: 2 });
+
+// Convenience: scroll to today
+gantt.scrollToToday({ align: 'center', behavior: 'smooth' });
+
+// Notes:
+// - If the target date is outside the current [minDate, maxDate], the chart will extend the range
+//   (left and/or right) and re-render, preserving vertical scroll position.
+// - Emits events:
+//     'rangeExtend' -> { direction: 'left' | 'right' | 'both', from: Date, to: Date }
+//     'scrollToDate' -> { date: Date, align: 'start' | 'center' | 'end' }
+```
+
 #### Day Marking
 
 ```javascript
@@ -346,6 +368,15 @@ gantt.on('viewModeChange', (mode) => {
 
 gantt.on('zoomChange', ({ columnWidth }) => {
   console.log('Zoom changed to column width:', columnWidth);
+});
+
+// Scrolling / infinite range events
+gantt.on('rangeExtend', ({ direction, from, to }) => {
+  console.log('Range extended:', direction, 'from', from, 'to', to);
+});
+
+gantt.on('scrollToDate', ({ date, align }) => {
+  console.log('Scrolled to date:', date, 'align:', align);
 });
 
 // Day marking events
@@ -454,9 +485,3 @@ gantt-chart/
 ## 🐛 Bug Reports
 
 Found a bug? Please [open an issue](https://github.com/Bentipe/gantt-chartmeleon/issues) with a detailed description and reproduction steps.
-
-## 🔒 Security
-
-- No passwords, API keys, or other secrets are included in this repository. 
-- Do not commit environment files or credentials. The repository .gitignore excludes common secret files (.env, .npmrc, .yarnrc.yml).
-- To report a vulnerability or accidental exposure, please follow our [Security Policy](./SECURITY.md).

@@ -18,11 +18,23 @@ export interface GanttOptions {
     theme?: 'default' | 'dark' | string;
 }
 
+export interface Segment {
+    id?: string;
+    name?: string;
+    start: Date | string;
+    end: Date | string;
+    color?: string;
+    metadata?: Record<string, any>;
+    className?: string; // custom CSS class(es) applied to this segment's SVG group
+    style?: string | Record<string, string | number>; // inline style for the segment's SVG group
+}
+
 export interface Task {
     id?: string;
     name: string;
     start: Date | string;
     end: Date | string;
+    segments?: Segment[]; // Optional: provide multiple segments; if omitted, start/end seed a single segment
     progress?: number;
     color?: string;
     textColor?: string;

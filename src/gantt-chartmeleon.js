@@ -773,7 +773,10 @@ class GanttChart {
       start: new Date(seg.start),
       end: new Date(seg.end),
       color: seg.color || task.color || '#2196F3',
-      metadata: seg.metadata || {}
+      metadata: seg.metadata || {},
+      // optional styling hooks per segment
+      className: seg.className || seg.class || '',
+      style: seg.style || null
     })) : null;
 
     if (!isMilestone && (!segments || segments.length === 0)) {
@@ -785,7 +788,9 @@ class GanttChart {
           start: new Date(task.start),
           end: new Date(task.end),
           color: task.color || '#2196F3',
-          metadata: {}
+          metadata: {},
+          className: '',
+          style: null
         }];
       } else {
         // As a last resort, create a 1-day segment starting today
@@ -797,7 +802,9 @@ class GanttChart {
           start: today,
           end: tomorrow,
           color: task.color || '#2196F3',
-          metadata: {}
+          metadata: {},
+          className: '',
+          style: null
         }];
       }
     }
@@ -1455,6 +1462,24 @@ class GanttChart {
             segGroup.classList.add('gantt-task-segment');
             segGroup.setAttribute('data-task-id', task.id);
             segGroup.setAttribute('data-segment-index', String(segIndex));
+
+            // Apply custom per-segment CSS class(es) and inline style if provided in config
+            if (seg.className && typeof seg.className === 'string') {
+              seg.className.split(/\s+/).filter(Boolean).forEach(cls => segGroup.classList.add(cls));
+            }
+            if (seg.style) {
+              let styleStr = '';
+              if (typeof seg.style === 'string') {
+                styleStr = seg.style;
+              } else if (typeof seg.style === 'object') {
+                styleStr = Object.entries(seg.style).map(([k, v]) => `${k}:${v}`).join(';');
+              }
+              if (styleStr) {
+                // Append to any existing inline style
+                const existing = segGroup.getAttribute('style') || '';
+                segGroup.setAttribute('style', existing ? `${existing};${styleStr}` : styleStr);
+              }
+            }
 
             const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
             rect.setAttribute('x', segStartX);

@@ -1,6 +1,6 @@
 {
   "name": "@bentipe/gantt-chartmeleon",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support",
   "author": "Bentipe",
   "license": "GPL-3.0",
@@ -33,6 +33,9 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/gantt-chartmeleon.es.js",
       "require": "./dist/gantt-chartmeleon.umd.js"
+    },
+    "./vue": {
+      "import": "./src/vue/GanttChartmeleon.vue"
     },
     "./dist/gantt-chartmeleon.css": {
       "import": "./dist/gantt-chartmeleon.css",

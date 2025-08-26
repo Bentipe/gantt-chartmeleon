@@ -12,6 +12,11 @@
             padding: 0;
             box-sizing: border-box;
         }
+        /* Demo of per-segment custom CSS via className */
+        .gantt-task-segment.highlighted-seg .gantt-task-bar {
+            stroke: #FF5722;
+            stroke-width: 3px;
+        }
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -104,8 +109,8 @@
 </div>
 
 <script type="module">
-    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.1.0/dist/gantt-chartmeleon.es.js';
-    //import { GanttChart } from '../src/gantt-chartmeleon.js';
+    //import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.1.0/dist/gantt-chartmeleon.es.js';
+    import { GanttChart } from '../src/gantt-chartmeleon.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {
@@ -214,7 +219,10 @@
                     name: 'FE Sprint 2',
                     start: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
                     end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
-                    color: '#1976D2'
+                    color: '#1976D2',
+                    className: 'highlighted-seg',
+                    // Inline style can also be provided (string or object)
+                    style: { filter: 'drop-shadow(0 0 4px rgba(0,0,0,0.3))' }
                 },
                 {
                     name: 'FE Sprint 3',

@@ -219,6 +219,7 @@ A task can be split into multiple segments, each with its own start, end, and na
 - Data model: provide a `segments` array on the task (see Task Properties above).
 - Colors: a segment can define its own color; otherwise it inherits the task color.
 - Events: taskClick/taskMouseOver/taskMouseOut/taskDrag/taskDrop include `segmentIndex` when the interaction targets a segment.
+- Custom CSS per segment: you can add `className` (string, can include multiple classes) and/or `style` (string or object) to a segment to style it individually. The class/style are applied to the segment's SVG group, so you can target its bar via `.gantt-task-segment.your-class .gantt-task-bar`.
 
 Example:
 
@@ -229,9 +230,15 @@ const task = {
   color: '#2196F3',
   segments: [
     { name: 'FE Sprint 1', start: '2025-08-26', end: '2025-08-28' },
-    { name: 'FE Sprint 2', start: '2025-08-29', end: '2025-08-31' }
+    { name: 'FE Sprint 2', start: '2025-08-29', end: '2025-08-31', className: 'highlighted-seg', style: 'filter: drop-shadow(0 0 4px rgba(0,0,0,0.3))' }
   ]
 };
+
+/* CSS */
+.gantt-task-segment.highlighted-seg .gantt-task-bar {
+  stroke: #FF5722;
+  stroke-width: 3px;
+}
 ```
 
 ### Group Properties

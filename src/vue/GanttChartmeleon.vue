@@ -43,7 +43,7 @@ const props = defineProps({
   }
 });
 
-  // Define emits
+// Define emits
 const emit = defineEmits([
   // Task events
   'tasks-set',

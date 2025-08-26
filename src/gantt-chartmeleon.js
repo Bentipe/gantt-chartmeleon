@@ -471,9 +471,31 @@ class GanttChart {
     const task = this.tasks.find(t => t.id === taskId);
     if (!task) return null;
 
-    Object.assign(task, updates);
-    if (updates.start) task.start = new Date(updates.start);
-    if (updates.end) task.end = new Date(updates.end);
+    // Apply shallow property updates (excluding segments for now)
+    const { segments: updSegments, start: updStart, end: updEnd, ...rest } = updates || {};
+    Object.assign(task, rest);
+
+    // Rebuild segments if provided in updates
+    if (Array.isArray(updSegments)) {
+      const normalized = this.normalizeTask({ ...task, segments: updSegments });
+      task.segments = normalized.segments;
+      task.start = normalized.start;
+      task.end = normalized.end;
+    } else if (updStart || updEnd) {
+      // If only start/end provided, convert to a single segment (segments-only model)
+      if (updStart && updEnd) {
+        const normalized = this.normalizeTask({ ...task, segments: [{ name: task.name, start: updStart, end: updEnd, color: task.color }] });
+        task.segments = normalized.segments;
+        task.start = normalized.start;
+        task.end = normalized.end;
+      }
+      // If only one of start/end is provided, ignore since start/end are derived
+    } else if (Array.isArray(task.segments) && task.segments.length > 0) {
+      // Ensure start/end reflect segments
+      const normalized = this.normalizeTask(task);
+      task.start = normalized.start;
+      task.end = normalized.end;
+    }
 
     this.calculateDateRange();
     this.updateVisibleTasks();
@@ -530,6 +552,13 @@ class GanttChart {
     this.tasks.forEach(task => {
       if (task.group === groupId) {
         task.group = null;
+      }
+    });
+
+    // Re-parent child groups to root
+    this.groups.forEach(g => {
+      if (g.parent === groupId) {
+        g.parent = null;
       }
     });
 
@@ -734,11 +763,60 @@ class GanttChart {
   // Private Methods
 
   normalizeTask(task) {
+    // Ensure tasks operate via segments only (except milestones)
+    const isMilestone = task.type === 'milestone';
+
+    // Build segments from provided segments or from start/end as a single segment
+    let segments = Array.isArray(task.segments) ? task.segments.map((seg, idx) => ({
+      id: seg.id || `${task.id || 'task'}-seg-${idx}`,
+      name: seg.name || `Segment ${idx + 1}`,
+      start: new Date(seg.start),
+      end: new Date(seg.end),
+      color: seg.color || task.color || '#2196F3',
+      metadata: seg.metadata || {}
+    })) : null;
+
+    if (!isMilestone && (!segments || segments.length === 0)) {
+      // If no segments provided, but start/end exist, create a single segment from them
+      if (task.start && task.end) {
+        segments = [{
+          id: `${task.id || 'task'}-seg-0`,
+          name: task.name || 'Segment 1',
+          start: new Date(task.start),
+          end: new Date(task.end),
+          color: task.color || '#2196F3',
+          metadata: {}
+        }];
+      } else {
+        // As a last resort, create a 1-day segment starting today
+        const today = new Date();
+        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+        segments = [{
+          id: `${task.id || 'task'}-seg-0`,
+          name: task.name || 'Segment 1',
+          start: today,
+          end: tomorrow,
+          color: task.color || '#2196F3',
+          metadata: {}
+        }];
+      }
+    }
+
+    // Compute overall start/end from segments (for non-milestones)
+    let start = task.start ? new Date(task.start) : null;
+    let end = task.end ? new Date(task.end) : null;
+    if (!isMilestone && segments && segments.length > 0) {
+      const segStarts = segments.map(s => new Date(s.start));
+      const segEnds = segments.map(s => new Date(s.end));
+      start = new Date(Math.min(...segStarts.map(d => d.getTime())));
+      end = new Date(Math.max(...segEnds.map(d => d.getTime())));
+    }
+
     return {
       id: task.id || this.generateId(),
       name: task.name || 'Untitled Task',
-      start: new Date(task.start),
-      end: new Date(task.end),
+      start: start instanceof Date ? start : (task.start ? new Date(task.start) : null),
+      end: end instanceof Date ? end : (task.end ? new Date(task.end) : null),
       progress: task.progress || 0,
       color: task.color || '#2196F3',
       textColor: task.textColor || '#ffffff',
@@ -748,6 +826,7 @@ class GanttChart {
       assignee: task.assignee || '',
       type: task.type || 'task',
       metadata: task.metadata || {},
+      segments: isMilestone ? null : segments,
       ...task
     };
   }
@@ -759,6 +838,7 @@ class GanttChart {
       workOrder: group.workOrder || '',
       color: group.color || '#607D8B',
       metadata: group.metadata || {},
+      parent: group.parent || null,
       ...group
     };
   }
@@ -771,7 +851,13 @@ class GanttChart {
       return;
     }
 
-    const allDates = this.tasks.flatMap(task => [task.start, task.end]);
+    // Include segments in date range if present
+    const allDates = this.tasks.flatMap(task => {
+      if (Array.isArray(task.segments) && task.segments.length > 0) {
+        return task.segments.flatMap(s => [s.start, s.end]);
+      }
+      return [task.start, task.end];
+    });
     this.minDate = new Date(Math.min(...allDates));
     this.maxDate = new Date(Math.max(...allDates));
 
@@ -799,22 +885,40 @@ class GanttChart {
   updateVisibleTasks() {
     this.visibleTasks = [];
 
-    // Add groups and their tasks
-    this.groups.forEach(group => {
-      this.visibleTasks.push({type: 'group', data: group});
+    // Build children map for groups (support nested groups)
+    const childrenMap = new Map();
+    // Initialize root list
+    childrenMap.set(null, []);
 
-      if (!this.collapsedGroups.has(group.id)) {
-        const groupTasks = this.tasks.filter(t => t.group === group.id);
-        groupTasks.forEach(task => {
-          this.visibleTasks.push({type: 'task', data: task});
-        });
-      }
+    this.groups.forEach(g => {
+      const parentId = g.parent || null;
+      if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
+      childrenMap.get(parentId).push(g);
     });
+
+    const addGroupAndChildren = (group, depth) => {
+      this.visibleTasks.push({ type: 'group', data: group, depth });
+      if (this.collapsedGroups.has(group.id)) return;
+
+      // First, render child groups
+      const childGroups = childrenMap.get(group.id) || [];
+      childGroups.forEach(child => addGroupAndChildren(child, depth + 1));
+
+      // Then, render tasks belonging to this group
+      const groupTasks = this.tasks.filter(t => t.group === group.id);
+      groupTasks.forEach(task => {
+        this.visibleTasks.push({ type: 'task', data: task, depth: depth + 1 });
+      });
+    };
+
+    // Render root groups and their subtrees
+    const rootGroups = childrenMap.get(null) || [];
+    rootGroups.forEach(g => addGroupAndChildren(g, 0));
 
     // Add ungrouped tasks
     const ungroupedTasks = this.tasks.filter(t => !t.group);
     ungroupedTasks.forEach(task => {
-      this.visibleTasks.push({type: 'task', data: task});
+      this.visibleTasks.push({ type: 'task', data: task, depth: 0 });
     });
   }
 
@@ -830,8 +934,12 @@ class GanttChart {
       // Ensure row height matches chart rowHeight exactly
       row.style.height = this.options.rowHeight + 'px';
 
+      const depth = item.depth || 0;
+
       if (item.type === 'group') {
         row.classList.add('gantt-group-label');
+        // Indentation for nested groups
+        row.style.paddingLeft = `${10 + depth * 20}px`;
 
         const icon = document.createElement('span');
         icon.className = 'gantt-collapse-icon';
@@ -861,6 +969,9 @@ class GanttChart {
       } else {
         if (item.data.group) {
           row.classList.add('gantt-child-label');
+          // Indentation for tasks under nested groups (align with group indentation + child offset)
+          const taskDepth = depth > 0 ? depth - 1 : 0;
+          row.style.paddingLeft = `${35 + taskDepth * 20}px`;
         }
 
         const info = document.createElement('div');
@@ -1321,11 +1432,8 @@ class GanttChart {
         const y = index * this.options.rowHeight + headerOffset + 10;
         const height = this.options.rowHeight - 20;
 
-        const startX = this.dateToX(task.start, columns);
-        const endX = this.dateToX(task.end, columns);
-        const width = Math.max(endX - startX, this.options.taskMinWidth);
-
         if (task.type === 'milestone') {
+          const startX = this.dateToX(task.start, columns);
           // Draw milestone as diamond
           const diamond = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
           const cx = startX + 15;
@@ -1336,8 +1444,44 @@ class GanttChart {
           diamond.setAttribute('fill', task.color);
           diamond.classList.add('gantt-milestone');
           taskGroup.appendChild(diamond);
+        } else if (Array.isArray(task.segments) && task.segments.length > 0) {
+          // Render each segment independently
+          task.segments.forEach((seg, segIndex) => {
+            const segStartX = this.dateToX(seg.start, columns);
+            const segEndX = this.dateToX(seg.end, columns);
+            const segWidth = Math.max(segEndX - segStartX, this.options.taskMinWidth);
+
+            const segGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            segGroup.classList.add('gantt-task-segment');
+            segGroup.setAttribute('data-task-id', task.id);
+            segGroup.setAttribute('data-segment-index', String(segIndex));
+
+            const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+            rect.setAttribute('x', segStartX);
+            rect.setAttribute('y', y);
+            rect.setAttribute('width', segWidth);
+            rect.setAttribute('height', height);
+            rect.setAttribute('rx', 4);
+            rect.setAttribute('fill', seg.color || task.color);
+            rect.classList.add('gantt-task-bar');
+            segGroup.appendChild(rect);
+
+            // Segment text (name)
+            const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            text.setAttribute('x', segStartX + 10);
+            text.setAttribute('y', y + height / 2 + 4);
+            text.classList.add('gantt-task-text', 'gantt-task-segment-text');
+            text.textContent = seg.name || task.name;
+            segGroup.appendChild(text);
+
+            taskGroup.appendChild(segGroup);
+          });
         } else {
-          // Task bar
+          // Single task bar
+          const startX = this.dateToX(task.start, columns);
+          const endX = this.dateToX(task.end, columns);
+          const width = Math.max(endX - startX, this.options.taskMinWidth);
+
           const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
           rect.setAttribute('x', startX);
           rect.setAttribute('y', y);
@@ -1453,21 +1597,44 @@ class GanttChart {
   // Event Handlers
 
   handleMouseDown(e) {
+    const segElement = e.target.closest('.gantt-task-segment');
     const taskElement = e.target.closest('.gantt-task');
-    if (taskElement && this.options.enableDragDrop) {
-      const taskId = taskElement.getAttribute('data-task-id');
+    if ((segElement || taskElement) && this.options.enableDragDrop) {
+      const sourceEl = segElement || taskElement;
+      const taskId = sourceEl.getAttribute('data-task-id');
       const task = this.tasks.find(t => t.id === taskId);
 
       if (task && task.type !== 'milestone') {
+        const segmentIndex = segElement ? parseInt(segElement.getAttribute('data-segment-index'), 10) : null;
+        let originalStart, originalEnd, originalSegments = null;
+        if (Array.isArray(task.segments) && task.segments.length > 0) {
+          if (segmentIndex !== null) {
+            originalStart = new Date(task.segments[segmentIndex].start);
+            originalEnd = new Date(task.segments[segmentIndex].end);
+          } else {
+            // Dragging whole task: move all segments together
+            const segStarts = task.segments.map(s => new Date(s.start).getTime());
+            const segEnds = task.segments.map(s => new Date(s.end).getTime());
+            originalStart = new Date(Math.min(...segStarts));
+            originalEnd = new Date(Math.max(...segEnds));
+            originalSegments = task.segments.map(s => ({ start: new Date(s.start), end: new Date(s.end) }));
+          }
+        } else {
+          // No segments (shouldn't happen for tasks), fallback to task dates
+          originalStart = new Date(task.start);
+          originalEnd = new Date(task.end);
+        }
         this.dragging = {
           task: task,
-          element: taskElement,
+          element: sourceEl,
           startX: e.clientX,
-          originalStart: new Date(task.start),
-          originalEnd: new Date(task.end)
+          originalStart,
+          originalEnd,
+          originalSegments,
+          segmentIndex
         };
 
-        taskElement.classList.add('gantt-dragging');
+        sourceEl.classList.add('gantt-dragging');
         e.preventDefault();
       }
     }
@@ -1475,22 +1642,43 @@ class GanttChart {
 
   handleTouchStart(e) {
     const touch = e.touches[0];
+    const segElement = e.target.closest('.gantt-task-segment');
     const taskElement = e.target.closest('.gantt-task');
 
-    if (taskElement && this.options.enableDragDrop) {
-      const taskId = taskElement.getAttribute('data-task-id');
+    if ((segElement || taskElement) && this.options.enableDragDrop) {
+      const sourceEl = segElement || taskElement;
+      const taskId = sourceEl.getAttribute('data-task-id');
       const task = this.tasks.find(t => t.id === taskId);
 
       if (task && task.type !== 'milestone') {
+        const segmentIndex = segElement ? parseInt(segElement.getAttribute('data-segment-index'), 10) : null;
+        let originalStart, originalEnd, originalSegments = null;
+        if (Array.isArray(task.segments) && task.segments.length > 0) {
+          if (segmentIndex !== null) {
+            originalStart = new Date(task.segments[segmentIndex].start);
+            originalEnd = new Date(task.segments[segmentIndex].end);
+          } else {
+            const segStarts = task.segments.map(s => new Date(s.start).getTime());
+            const segEnds = task.segments.map(s => new Date(s.end).getTime());
+            originalStart = new Date(Math.min(...segStarts));
+            originalEnd = new Date(Math.max(...segEnds));
+            originalSegments = task.segments.map(s => ({ start: new Date(s.start), end: new Date(s.end) }));
+          }
+        } else {
+          originalStart = new Date(task.start);
+          originalEnd = new Date(task.end);
+        }
         this.dragging = {
           task: task,
-          element: taskElement,
+          element: sourceEl,
           startX: touch.clientX,
-          originalStart: new Date(task.start),
-          originalEnd: new Date(task.end)
+          originalStart,
+          originalEnd,
+          originalSegments,
+          segmentIndex
         };
 
-        taskElement.classList.add('gantt-dragging');
+        sourceEl.classList.add('gantt-dragging');
         e.preventDefault();
       }
     }
@@ -1508,14 +1696,38 @@ class GanttChart {
       );
       const newEnd = new Date(newStart.getTime() + duration);
 
-      this.dragging.task.start = newStart;
-      this.dragging.task.end = newEnd;
+      if (this.dragging.segmentIndex !== null && Array.isArray(this.dragging.task.segments)) {
+        const idx = this.dragging.segmentIndex;
+        this.dragging.task.segments[idx].start = newStart;
+        this.dragging.task.segments[idx].end = newEnd;
+        // Update aggregate start/end
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        this.dragging.task.start = new Date(Math.min(...segStarts));
+        this.dragging.task.end = new Date(Math.max(...segEnds));
+      } else if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0 && this.dragging.originalSegments) {
+        // Move all segments together by delta
+        const deltaMs = newStart.getTime() - this.dragging.originalStart.getTime();
+        this.dragging.task.segments.forEach((s, i) => {
+          const orig = this.dragging.originalSegments[i];
+          s.start = new Date(orig.start.getTime() + deltaMs);
+          s.end = new Date(orig.end.getTime() + deltaMs);
+        });
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        this.dragging.task.start = new Date(Math.min(...segStarts));
+        this.dragging.task.end = new Date(Math.max(...segEnds));
+      } else {
+        this.dragging.task.start = newStart;
+        this.dragging.task.end = newEnd;
+      }
 
       this.render();
       this.emit('taskDrag', {
         task: this.dragging.task,
         start: newStart,
-        end: newEnd
+        end: newEnd,
+        segmentIndex: this.dragging.segmentIndex
       });
     }
   }
@@ -1533,14 +1745,36 @@ class GanttChart {
       );
       const newEnd = new Date(newStart.getTime() + duration);
 
-      this.dragging.task.start = newStart;
-      this.dragging.task.end = newEnd;
+      if (this.dragging.segmentIndex !== null && Array.isArray(this.dragging.task.segments)) {
+        const idx = this.dragging.segmentIndex;
+        this.dragging.task.segments[idx].start = newStart;
+        this.dragging.task.segments[idx].end = newEnd;
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        this.dragging.task.start = new Date(Math.min(...segStarts));
+        this.dragging.task.end = new Date(Math.max(...segEnds));
+      } else if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0 && this.dragging.originalSegments) {
+        const deltaMs = newStart.getTime() - this.dragging.originalStart.getTime();
+        this.dragging.task.segments.forEach((s, i) => {
+          const orig = this.dragging.originalSegments[i];
+          s.start = new Date(orig.start.getTime() + deltaMs);
+          s.end = new Date(orig.end.getTime() + deltaMs);
+        });
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        this.dragging.task.start = new Date(Math.min(...segStarts));
+        this.dragging.task.end = new Date(Math.max(...segEnds));
+      } else {
+        this.dragging.task.start = newStart;
+        this.dragging.task.end = newEnd;
+      }
 
       this.render();
       this.emit('taskDrag', {
         task: this.dragging.task,
         start: newStart,
-        end: newEnd
+        end: newEnd,
+        segmentIndex: this.dragging.segmentIndex
       });
 
       e.preventDefault();
@@ -1551,12 +1785,17 @@ class GanttChart {
     if (this.dragging) {
       this.dragging.element.classList.remove('gantt-dragging');
 
+      // Recalculate date range in case the segment was dragged beyond current bounds
+      this.calculateDateRange();
+      this.updateVisibleTasks();
+
       this.emit('taskDrop', {
         task: this.dragging.task,
         start: this.dragging.task.start,
         end: this.dragging.task.end,
         originalStart: this.dragging.originalStart,
-        originalEnd: this.dragging.originalEnd
+        originalEnd: this.dragging.originalEnd,
+        segmentIndex: this.dragging.segmentIndex
       });
 
       this.dragging = null;
@@ -1568,12 +1807,16 @@ class GanttChart {
     if (this.dragging) {
       this.dragging.element.classList.remove('gantt-dragging');
 
+      this.calculateDateRange();
+      this.updateVisibleTasks();
+
       this.emit('taskDrop', {
         task: this.dragging.task,
         start: this.dragging.task.start,
         end: this.dragging.task.end,
         originalStart: this.dragging.originalStart,
-        originalEnd: this.dragging.originalEnd
+        originalEnd: this.dragging.originalEnd,
+        segmentIndex: this.dragging.segmentIndex
       });
 
       this.dragging = null;
@@ -1582,37 +1825,46 @@ class GanttChart {
   }
 
   handleClick(e) {
+    const segElement = e.target.closest('.gantt-task-segment');
     const taskElement = e.target.closest('.gantt-task');
-    if (taskElement) {
-      const taskId = taskElement.getAttribute('data-task-id');
+    const sourceEl = segElement || taskElement;
+    if (sourceEl) {
+      const taskId = sourceEl.getAttribute('data-task-id');
       const task = this.tasks.find(t => t.id === taskId);
 
       if (task) {
-        this.emit('taskClick', task);
+        const segmentIndex = segElement ? parseInt(segElement.getAttribute('data-segment-index'), 10) : null;
+        this.emit('taskClick', segmentIndex !== null ? { task, segmentIndex } : task);
       }
     }
   }
 
   handleMouseOver(e) {
+    const segElement = e.target.closest('.gantt-task-segment');
     const taskElement = e.target.closest('.gantt-task');
-    if (taskElement) {
-      const taskId = taskElement.getAttribute('data-task-id');
+    const sourceEl = segElement || taskElement;
+    if (sourceEl) {
+      const taskId = sourceEl.getAttribute('data-task-id');
       const task = this.tasks.find(t => t.id === taskId);
 
       if (task) {
-        this.emit('taskMouseOver', {task, event: e});
+        const segmentIndex = segElement ? parseInt(segElement.getAttribute('data-segment-index'), 10) : null;
+        this.emit('taskMouseOver', {task, segmentIndex, event: e});
       }
     }
   }
 
   handleMouseOut(e) {
+    const segElement = e.target.closest('.gantt-task-segment');
     const taskElement = e.target.closest('.gantt-task');
-    if (taskElement) {
-      const taskId = taskElement.getAttribute('data-task-id');
+    const sourceEl = segElement || taskElement;
+    if (sourceEl) {
+      const taskId = sourceEl.getAttribute('data-task-id');
       const task = this.tasks.find(t => t.id === taskId);
 
       if (task) {
-        this.emit('taskMouseOut', {task, event: e});
+        const segmentIndex = segElement ? parseInt(segElement.getAttribute('data-segment-index'), 10) : null;
+        this.emit('taskMouseOut', {task, segmentIndex, event: e});
       }
     }
   }

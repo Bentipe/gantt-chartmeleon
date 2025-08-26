@@ -206,6 +206,16 @@
 }
 
 /* Task Styles */
+/* Segmented task specific styles */
+.gantt-task-segment {
+    cursor: move;
+}
+.gantt-task-segment .gantt-task-bar {
+    transition: fill 0.2s;
+}
+.gantt-task-segment .gantt-task-segment-text {
+    fill: #fff;
+}
 /* Ensure group rows keep their blue background even when alternating row styling applies */
 .gantt-row.gantt-group-row {
     fill: #e8f4f8;

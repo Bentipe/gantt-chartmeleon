@@ -49,6 +49,6 @@ jobs:
           cp dist/gantt-chartmeleon.css demo/gantt-chartmeleon.css
 
       - name: Deploy to GitHub Pages
-        if: github.ref == 'refs/heads/master'
+        #if: github.ref == 'refs/heads/master'
         id: deployment
         uses: actions/deploy-pages@v4

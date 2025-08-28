@@ -472,29 +472,13 @@ class GanttChart {
     if (!task) return null;
 
     // Apply shallow property updates (excluding segments for now)
-    const { segments: updSegments, start: updStart, end: updEnd, ...rest } = updates || {};
+    const { segments: updSegments, start: _us, end: _ue, ...rest } = updates || {};
     Object.assign(task, rest);
 
     // Rebuild segments if provided in updates
     if (Array.isArray(updSegments)) {
       const normalized = this.normalizeTask({ ...task, segments: updSegments });
       task.segments = normalized.segments;
-      task.start = normalized.start;
-      task.end = normalized.end;
-    } else if (updStart || updEnd) {
-      // If only start/end provided, convert to a single segment (segments-only model)
-      if (updStart && updEnd) {
-        const normalized = this.normalizeTask({ ...task, segments: [{ name: task.name, start: updStart, end: updEnd, color: task.color }] });
-        task.segments = normalized.segments;
-        task.start = normalized.start;
-        task.end = normalized.end;
-      }
-      // If only one of start/end is provided, ignore since start/end are derived
-    } else if (Array.isArray(task.segments) && task.segments.length > 0) {
-      // Ensure start/end reflect segments
-      const normalized = this.normalizeTask(task);
-      task.start = normalized.start;
-      task.end = normalized.end;
     }
 
     this.calculateDateRange();
@@ -763,10 +747,10 @@ class GanttChart {
   // Private Methods
 
   normalizeTask(task) {
-    // Ensure tasks operate via segments only (except milestones)
+    // Segments-only model: tasks do not have task-level start/end. Milestones are represented as 0-duration segments.
     const isMilestone = task.type === 'milestone';
 
-    // Build segments from provided segments or from start/end as a single segment
+    // Build segments from provided segments
     let segments = Array.isArray(task.segments) ? task.segments.map((seg, idx) => ({
       id: seg.id || `${task.id || 'task'}-seg-${idx}`,
       name: seg.name || `Segment ${idx + 1}`,
@@ -774,56 +758,44 @@ class GanttChart {
       end: new Date(seg.end),
       color: seg.color || task.color || '#2196F3',
       metadata: seg.metadata || {},
-      // optional styling hooks per segment
       className: seg.className || seg.class || '',
       style: seg.style || null
     })) : null;
 
-    if (!isMilestone && (!segments || segments.length === 0)) {
-      // If no segments provided, but start/end exist, create a single segment from them
-      if (task.start && task.end) {
-        segments = [{
-          id: `${task.id || 'task'}-seg-0`,
-          name: task.name || 'Segment 1',
-          start: new Date(task.start),
-          end: new Date(task.end),
-          color: task.color || '#2196F3',
-          metadata: {},
-          className: '',
-          style: null
-        }];
-      } else {
-        // As a last resort, create a 1-day segment starting today
-        const today = new Date();
-        const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
-        segments = [{
-          id: `${task.id || 'task'}-seg-0`,
-          name: task.name || 'Segment 1',
-          start: today,
-          end: tomorrow,
-          color: task.color || '#2196F3',
-          metadata: {},
-          className: '',
-          style: null
-        }];
-      }
+    if (isMilestone) {
+      // Represent milestone with a single zero-duration segment
+      const date = task.date ? new Date(task.date) : new Date();
+      segments = [{
+        id: `${task.id || 'task'}-seg-0`,
+        name: task.name || 'Milestone',
+        start: date,
+        end: date,
+        color: task.color || '#2196F3',
+        metadata: {},
+        className: '',
+        style: null
+      }];
+    } else if (!segments || segments.length === 0) {
+      // As a last resort for non-milestones, create a 1-day segment starting today
+      const today = new Date();
+      const tomorrow = new Date(today.getTime() + 24 * 60 * 60 * 1000);
+      segments = [{
+        id: `${task.id || 'task'}-seg-0`,
+        name: task.name || 'Segment 1',
+        start: today,
+        end: tomorrow,
+        color: task.color || '#2196F3',
+        metadata: {},
+        className: '',
+        style: null
+      }];
     }
 
-    // Compute overall start/end from segments (for non-milestones)
-    let start = task.start ? new Date(task.start) : null;
-    let end = task.end ? new Date(task.end) : null;
-    if (!isMilestone && segments && segments.length > 0) {
-      const segStarts = segments.map(s => new Date(s.start));
-      const segEnds = segments.map(s => new Date(s.end));
-      start = new Date(Math.min(...segStarts.map(d => d.getTime())));
-      end = new Date(Math.max(...segEnds.map(d => d.getTime())));
-    }
-
+    // Return normalized task WITHOUT task-level start/end
+    const { start: _s, end: _e, ...rest } = task || {};
     return {
       id: task.id || this.generateId(),
       name: task.name || 'Untitled Task',
-      start: start instanceof Date ? start : (task.start ? new Date(task.start) : null),
-      end: end instanceof Date ? end : (task.end ? new Date(task.end) : null),
       progress: task.progress || 0,
       color: task.color || '#2196F3',
       textColor: task.textColor || '#ffffff',
@@ -833,8 +805,8 @@ class GanttChart {
       assignee: task.assignee || '',
       type: task.type || 'task',
       metadata: task.metadata || {},
-      segments: isMilestone ? null : segments,
-      ...task
+      segments,
+      ...rest
     };
   }
 
@@ -858,13 +830,23 @@ class GanttChart {
       return;
     }
 
-    // Include segments in date range if present
-    const allDates = this.tasks.flatMap(task => {
+    // Use only segment dates; milestones are represented as segments, too
+    const allDates = [];
+    this.tasks.forEach(task => {
       if (Array.isArray(task.segments) && task.segments.length > 0) {
-        return task.segments.flatMap(s => [s.start, s.end]);
+        task.segments.forEach(s => {
+          allDates.push(s.start, s.end);
+        });
       }
-      return [task.start, task.end];
     });
+
+    if (allDates.length === 0) {
+      const now = new Date();
+      this.minDate = new Date(now.getFullYear(), now.getMonth(), 1);
+      this.maxDate = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      return;
+    }
+
     this.minDate = new Date(Math.min(...allDates));
     this.maxDate = new Date(Math.max(...allDates));
 
@@ -1440,7 +1422,8 @@ class GanttChart {
         const height = this.options.rowHeight - 20;
 
         if (task.type === 'milestone') {
-          const startX = this.dateToX(task.start, columns);
+          const mDate = (task.segments && task.segments[0] && task.segments[0].start) ? task.segments[0].start : new Date();
+          const startX = this.dateToX(mDate, columns);
           // Draw milestone as diamond
           const diamond = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
           const cx = startX + 15;
@@ -1502,42 +1485,8 @@ class GanttChart {
             taskGroup.appendChild(segGroup);
           });
         } else {
-          // Single task bar
-          const startX = this.dateToX(task.start, columns);
-          const endX = this.dateToX(task.end, columns);
-          const width = Math.max(endX - startX, this.options.taskMinWidth);
-
-          const rect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-          rect.setAttribute('x', startX);
-          rect.setAttribute('y', y);
-          rect.setAttribute('width', width);
-          rect.setAttribute('height', height);
-          rect.setAttribute('rx', 4);
-          rect.setAttribute('fill', task.color);
-          rect.classList.add('gantt-task-bar');
-          taskGroup.appendChild(rect);
-
-          // Progress bar
-          if (task.progress > 0) {
-            const progressRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
-            progressRect.setAttribute('x', startX);
-            progressRect.setAttribute('y', y);
-            progressRect.setAttribute('width', width * (task.progress / 100));
-            progressRect.setAttribute('height', height);
-            progressRect.setAttribute('rx', 4);
-            progressRect.setAttribute('fill', task.color);
-            progressRect.setAttribute('opacity', 0.5);
-            progressRect.classList.add('gantt-task-progress');
-            taskGroup.appendChild(progressRect);
-          }
-
-          // Task text
-          const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-          text.setAttribute('x', startX + 10);
-          text.setAttribute('y', y + height / 2 + 4);
-          text.classList.add('gantt-task-text');
-          text.textContent = task.name;
-          taskGroup.appendChild(text);
+          // Fallback: if no segments (should not happen), skip rendering bar
+          // (All non-milestone tasks should have segments after normalization)
         }
 
         tasksGroup.appendChild(taskGroup);
@@ -1565,11 +1514,28 @@ class GanttChart {
             if (depTaskIndex !== -1) {
               const depTask = this.visibleTasks[depTaskIndex].data;
 
-              const startX = this.dateToX(depTask.end, columns);
+              // Compute dependency path from depTask max end to task min start
+              let depEndDate = null;
+              if (Array.isArray(depTask.segments) && depTask.segments.length > 0) {
+                const depEnds = depTask.segments.map(s => new Date(s.end).getTime());
+                depEndDate = new Date(Math.max(...depEnds));
+              } else {
+                depEndDate = new Date();
+              }
+
+              let taskStartDate = null;
+              if (Array.isArray(task.segments) && task.segments.length > 0) {
+                const taskStarts = task.segments.map(s => new Date(s.start).getTime());
+                taskStartDate = new Date(Math.min(...taskStarts));
+              } else {
+                taskStartDate = new Date();
+              }
+
+              const startX = this.dateToX(depEndDate, columns);
               const startY = depTaskIndex * this.options.rowHeight +
                                 headerOffset + this.options.rowHeight / 2;
 
-              const endX = this.dateToX(task.start, columns);
+              const endX = this.dateToX(taskStartDate, columns);
               const endY = index * this.options.rowHeight +
                                 headerOffset + this.options.rowHeight / 2;
 
@@ -1645,9 +1611,10 @@ class GanttChart {
             originalSegments = task.segments.map(s => ({ start: new Date(s.start), end: new Date(s.end) }));
           }
         } else {
-          // No segments (shouldn't happen for tasks), fallback to task dates
-          originalStart = new Date(task.start);
-          originalEnd = new Date(task.end);
+          // No segments; default to today as zero-duration to avoid errors
+          const today = new Date();
+          originalStart = today;
+          originalEnd = today;
         }
         this.dragging = {
           task: task,
@@ -1690,8 +1657,9 @@ class GanttChart {
             originalSegments = task.segments.map(s => ({ start: new Date(s.start), end: new Date(s.end) }));
           }
         } else {
-          originalStart = new Date(task.start);
-          originalEnd = new Date(task.end);
+          const today = new Date();
+          originalStart = today;
+          originalEnd = today;
         }
         this.dragging = {
           task: task,
@@ -1725,11 +1693,6 @@ class GanttChart {
         const idx = this.dragging.segmentIndex;
         this.dragging.task.segments[idx].start = newStart;
         this.dragging.task.segments[idx].end = newEnd;
-        // Update aggregate start/end
-        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
-        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
-        this.dragging.task.start = new Date(Math.min(...segStarts));
-        this.dragging.task.end = new Date(Math.max(...segEnds));
       } else if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0 && this.dragging.originalSegments) {
         // Move all segments together by delta
         const deltaMs = newStart.getTime() - this.dragging.originalStart.getTime();
@@ -1738,20 +1701,23 @@ class GanttChart {
           s.start = new Date(orig.start.getTime() + deltaMs);
           s.end = new Date(orig.end.getTime() + deltaMs);
         });
+      }
+
+      // Compute aggregate range for event payload
+      let aggStart = newStart;
+      let aggEnd = newEnd;
+      if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0) {
         const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
         const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
-        this.dragging.task.start = new Date(Math.min(...segStarts));
-        this.dragging.task.end = new Date(Math.max(...segEnds));
-      } else {
-        this.dragging.task.start = newStart;
-        this.dragging.task.end = newEnd;
+        aggStart = new Date(Math.min(...segStarts));
+        aggEnd = new Date(Math.max(...segEnds));
       }
 
       this.render();
       this.emit('taskDrag', {
         task: this.dragging.task,
-        start: newStart,
-        end: newEnd,
+        start: aggStart,
+        end: aggEnd,
         segmentIndex: this.dragging.segmentIndex
       });
     }
@@ -1774,10 +1740,6 @@ class GanttChart {
         const idx = this.dragging.segmentIndex;
         this.dragging.task.segments[idx].start = newStart;
         this.dragging.task.segments[idx].end = newEnd;
-        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
-        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
-        this.dragging.task.start = new Date(Math.min(...segStarts));
-        this.dragging.task.end = new Date(Math.max(...segEnds));
       } else if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0 && this.dragging.originalSegments) {
         const deltaMs = newStart.getTime() - this.dragging.originalStart.getTime();
         this.dragging.task.segments.forEach((s, i) => {
@@ -1785,20 +1747,22 @@ class GanttChart {
           s.start = new Date(orig.start.getTime() + deltaMs);
           s.end = new Date(orig.end.getTime() + deltaMs);
         });
+      }
+
+      let aggStart = newStart;
+      let aggEnd = newEnd;
+      if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0) {
         const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
         const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
-        this.dragging.task.start = new Date(Math.min(...segStarts));
-        this.dragging.task.end = new Date(Math.max(...segEnds));
-      } else {
-        this.dragging.task.start = newStart;
-        this.dragging.task.end = newEnd;
+        aggStart = new Date(Math.min(...segStarts));
+        aggEnd = new Date(Math.max(...segEnds));
       }
 
       this.render();
       this.emit('taskDrag', {
         task: this.dragging.task,
-        start: newStart,
-        end: newEnd,
+        start: aggStart,
+        end: aggEnd,
         segmentIndex: this.dragging.segmentIndex
       });
 
@@ -1814,10 +1778,20 @@ class GanttChart {
       this.calculateDateRange();
       this.updateVisibleTasks();
 
+      // Compute aggregate range for drop payload
+      let aggStart = this.dragging.originalStart;
+      let aggEnd = this.dragging.originalEnd;
+      if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0) {
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        aggStart = new Date(Math.min(...segStarts));
+        aggEnd = new Date(Math.max(...segEnds));
+      }
+
       this.emit('taskDrop', {
         task: this.dragging.task,
-        start: this.dragging.task.start,
-        end: this.dragging.task.end,
+        start: aggStart,
+        end: aggEnd,
         originalStart: this.dragging.originalStart,
         originalEnd: this.dragging.originalEnd,
         segmentIndex: this.dragging.segmentIndex
@@ -1835,10 +1809,19 @@ class GanttChart {
       this.calculateDateRange();
       this.updateVisibleTasks();
 
+      let aggStart = this.dragging.originalStart;
+      let aggEnd = this.dragging.originalEnd;
+      if (Array.isArray(this.dragging.task.segments) && this.dragging.task.segments.length > 0) {
+        const segStarts = this.dragging.task.segments.map(s => s.start.getTime());
+        const segEnds = this.dragging.task.segments.map(s => s.end.getTime());
+        aggStart = new Date(Math.min(...segStarts));
+        aggEnd = new Date(Math.max(...segEnds));
+      }
+
       this.emit('taskDrop', {
         task: this.dragging.task,
-        start: this.dragging.task.start,
-        end: this.dragging.task.end,
+        start: aggStart,
+        end: aggEnd,
         originalStart: this.dragging.originalStart,
         originalEnd: this.dragging.originalEnd,
         segmentIndex: this.dragging.segmentIndex

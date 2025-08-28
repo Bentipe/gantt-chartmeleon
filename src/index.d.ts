@@ -32,9 +32,8 @@ export interface Segment {
 export interface Task {
     id?: string;
     name: string;
-    start: Date | string;
-    end: Date | string;
-    segments?: Segment[]; // Optional: provide multiple segments; if omitted, start/end seed a single segment
+    // Segments-only model: tasks do not have task-level start/end
+    segments?: Segment[]; // Optional: multiple segments; if omitted, a default 1-day segment will be created by the library
     progress?: number;
     color?: string;
     textColor?: string;
@@ -71,6 +70,7 @@ export interface DragEventData {
     task: Task;
     start: Date;
     end: Date;
+    segmentIndex?: number | null;
 }
 
 export interface DropEventData extends DragEventData {
@@ -80,6 +80,7 @@ export interface DropEventData extends DragEventData {
 
 export interface MouseEventData {
     task: Task;
+    segmentIndex?: number | null;
     event: MouseEvent;
 }
 
@@ -96,7 +97,7 @@ export interface EventMap {
     taskAdd: EventCallback<Task>;
     taskUpdate: EventCallback<Task>;
     taskRemove: EventCallback<Task>;
-    taskClick: EventCallback<Task>;
+    taskClick: EventCallback<any>;
     taskDrag: EventCallback<DragEventData>;
     taskDrop: EventCallback<DropEventData>;
     taskMouseOver: EventCallback<MouseEventData>;

@@ -115,8 +115,8 @@
 </div>
 
 <script type="module">
-    import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.1.1/dist/gantt-chartmeleon.es.js';
-    //import { GanttChart } from '../src/gantt-chartmeleon.js';
+    //import { GanttChart } from 'https://cdn.jsdelivr.net/npm/@bentipe/gantt-chartmeleon@1.1.1/dist/gantt-chartmeleon.es.js';
+    import { GanttChart } from '../src/gantt-chartmeleon.js';
 
     // Initialize Gantt Chart
     const gantt = new GanttChart('#gantt-container', {
@@ -164,8 +164,14 @@
         {
             id: 'task-1',
             name: 'Project Kickoff',
-            start: new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000),
+            segments: [
+                {
+                    name: 'Project Kickoff',
+                    start: new Date(today.getTime() - 10 * 24 * 60 * 60 * 1000),
+                    end: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000),
+                    color: '#4CAF50'
+                }
+            ],
             progress: 100,
             color: '#4CAF50',
             group: 'planning',
@@ -176,8 +182,9 @@
         {
             id: 'task-2',
             name: 'Requirements Gathering',
-            start: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Requirements Gathering', start: new Date(today.getTime() - 9 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000), color: '#4CAF50' }
+            ],
             progress: 100,
             color: '#4CAF50',
             group: 'planning',
@@ -187,8 +194,9 @@
         {
             id: 'task-3',
             name: 'Technical Design',
-            start: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Technical Design', start: new Date(today.getTime() - 5 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000), color: '#4CAF50' }
+            ],
             progress: 100,
             color: '#4CAF50',
             group: 'planning',
@@ -201,8 +209,9 @@
         {
             id: 'task-4',
             name: 'Backend Development',
-            start: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Backend Development', start: new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000), color: '#2196F3' }
+            ],
             progress: 60,
             color: '#2196F3',
             group: 'dev-backend',
@@ -247,8 +256,9 @@
         {
             id: 'task-6',
             name: 'API Integration',
-            start: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'API Integration', start: new Date(today.getTime() + 3 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000), color: '#FF9800' }
+            ],
             progress: 0,
             color: '#FF9800',
             group: 'development',
@@ -261,8 +271,9 @@
         {
             id: 'task-7',
             name: 'Unit Testing',
-            start: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 9 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Unit Testing', start: new Date(today.getTime() + 5 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 9 * 24 * 60 * 60 * 1000), color: '#9C27B0' }
+            ],
             progress: 0,
             color: '#9C27B0',
             group: 'testing',
@@ -273,8 +284,9 @@
         {
             id: 'task-8',
             name: 'Integration Testing',
-            start: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Integration Testing', start: new Date(today.getTime() + 8 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000), color: '#9C27B0' }
+            ],
             progress: 0,
             color: '#9C27B0',
             group: 'testing',
@@ -285,8 +297,9 @@
         {
             id: 'task-9',
             name: 'UAT',
-            start: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'UAT', start: new Date(today.getTime() + 11 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), color: '#E91E63' }
+            ],
             progress: 0,
             color: '#E91E63',
             group: 'testing',
@@ -297,8 +310,9 @@
         {
             id: 'task-10',
             name: 'Go Live',
-            start: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
-            end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000),
+            segments: [
+                { name: 'Go Live', start: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), end: new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000), color: '#F44336' }
+            ],
             progress: 0,
             color: '#F44336',
             type: 'milestone',
@@ -307,15 +321,8 @@
         }
     ];
 
-    // Set tasks and groups (ensure all non-milestone tasks have segments)
-    const normalizedTasks = tasks.map(t => {
-        if (t.type === 'milestone' || (Array.isArray(t.segments) && t.segments.length > 0)) return t;
-        return {
-            ...t,
-            segments: [{ name: t.name, start: t.start, end: t.end, color: t.color }]
-        };
-    });
-    gantt.setTasks(normalizedTasks, groups);
+    // Set tasks and groups
+    gantt.setTasks(tasks, groups);
 
     // Mark today
     gantt.markDay(today, 'today', '#FFD700');

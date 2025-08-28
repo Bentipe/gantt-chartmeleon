@@ -28,7 +28,7 @@ A modern, feature-rich Gantt chart library for JavaScript with Vue 3 support. Bu
 - 🧩 **Sidebar Improvements** - Custom sidebar title + resizable sidebar
 - 💫 **Vue 3 Ready** - Easy integration with Vue 3 projects
 
-Note: Tasks operate via a segments-only model (except milestones). Each task must have one or more segments. If you pass task-level start/end only, the library will internally convert them into a single segment and compute the task’s overall start/end from its segments.
+Note: Tasks operate via a segments-only model (including milestones represented as zero-duration segments). Each task must have one or more segments. Task-level start/end are not supported and should not be provided.
 
 ## 📦 Installation
 
@@ -62,8 +62,7 @@ const tasks = [
     {
         id: '1',
         name: 'Project Planning',
-        start: '2024-01-01',
-        end: '2024-01-05',
+        segments: [ { name: 'Project Planning', start: '2024-01-01', end: '2024-01-05' } ],
         progress: 75,
         color: '#4CAF50'
     },
@@ -182,12 +181,8 @@ const options = {
 const task = {
   id: 'unique-id',           // Required: Unique identifier
   name: 'Task Name',         // Required: Display name
-  // Segments-only model: tasks operate via segments (1..N). If you pass start/end, they will be converted to a single segment.
-  // start/end are ignored as authoritative values and always derived from segments.
-  // You can still seed a single segment by providing start/end.
-  start: '2024-01-01',       // Optional: used only to seed a single segment
-  end: '2024-01-05',         // Optional: used only to seed a single segment
-  segments: [                // Required for multi-part tasks; if omitted, a single segment will be created from start/end or defaulted
+  // Segments-only model: tasks operate via segments (1..N). Task-level start/end are not supported.
+  segments: [                // Required for multi-part tasks; if omitted, a default 1-day segment will be created
     {
       id: 'seg-1',
       name: 'Phase A',
@@ -210,7 +205,7 @@ const task = {
 
 Notes:
 - Tasks operate via segments only. The task’s overall start/end are always computed as the min/max over its segments.
-- If a task is provided with only start/end, it will be converted into a single-segment task internally.
+- Milestones should be provided with a single segment where start === end (zero-duration).
 
 ### Segmented Tasks
 
@@ -265,8 +260,7 @@ gantt.setTasks(tasks, groups);
 // Add a single task
 const newTask = gantt.addTask({
   name: 'New Task',
-  start: '2024-01-01',
-  end: '2024-01-05'
+  segments: [ { name: 'New Task', start: '2024-01-01', end: '2024-01-05' } ]
 });
 
 // Update a task
